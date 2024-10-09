@@ -10,20 +10,70 @@ public class IT2CLARIOSACR {
     public void addCustomer(){
         Scanner sc = new Scanner(System.in);
         CONFIG conf = new CONFIG();
-        System.out.print("Customers First Name: ");
+        
+        System.out.print("------------------------------------");
+        System.out.print("\nCustomers First Name: ");
         String fname = sc.next();
+        
         System.out.print("Customers Last Name: ");
         String lname = sc.next();
+        
         System.out.print("Email: ");
         String email = sc.next();
-        System.out.print(" Status: ");
-        String status = sc.next();
         
-        String sql = "INSERT INTO CUSTOMER (c_fname, c_lname, c_email, c_status) VALUES (?, ?, ?, ?)";
+        System.out.print("Contact Number:");
+        String contact = sc.next();
+        
+        String sql = "INSERT INTO Customer (c_fname, c_lname, c_email, c_contact) VALUES (?, ?, ?, ?)";
+ 
+        conf.addRecord(sql, fname, lname, email, contact);
+        
+    }
+    
 
+    private void viewCustomer() {
+        CONFIG con = new CONFIG();
+    
+        String lariosaQuery = "SELECT * FROM Customer";
+        String[] lariosaHeaders = {"ID", "FirstName", "Lastname", "Email", "Contact"};
+        String[] lariosaColumns = {"c_id", "c_fname", "c_lname", "c_email", "c_contact"};
         
-        conf.addRecord(sql, fname, lname, email, status);
-        
+        con.viewRecords(lariosaQuery,lariosaHeaders,lariosaColumns);
+    }
+
+    private void updateCustomer(){
+    Scanner sc = new Scanner (System.in);
+    
+        System.out.print("Enter Customer ID:");
+        int id =sc.nextInt();
+    
+        System.out.print("Enter First Name:");
+        String fname = sc.next();
+    
+        System.out.print("Enter Last Name:");
+        String lname =sc.next();
+    
+        System.out.print("Enter Email:");
+        String email =sc.next();
+    
+        System.out.print("Enter Contact Number:");
+        String number =sc.next();
+    
+        String qry = "UPDATE Customer SET c_fname=?, c_lname=?, c_email=?, c_contact=? WHERE c_id = ?";
+    
+    CONFIG con = new CONFIG();
+    con.updateRecord (qry, fname, lname, email, number, id);
+    
+}
+    private void deleteCustomer(){
+       Scanner sc = new Scanner (System.in); 
+       System.out.print("Enter Customer ID:");
+       int id =sc.nextInt();
+       
+       String sqlDelete ="DELETE FROM Customer WHERE c_id =?";
+       CONFIG con = new CONFIG();
+       con.deleteRecord (sqlDelete,id);
+               
     }
     
     public static void main(String[] args) {
@@ -56,13 +106,16 @@ public class IT2CLARIOSACR {
                     cr.addCustomer();
                     break;
                 case 2:
-                    
+                    IT2CLARIOSACR vcr = new IT2CLARIOSACR();
+                    vcr.viewCustomer();
                     break;
                 case 3:
-                   
+                    IT2CLARIOSACR ucr = new IT2CLARIOSACR();
+                    ucr.updateCustomer();
                     break;
                 case 4:
-                    
+                    IT2CLARIOSACR dcr = new IT2CLARIOSACR();
+                    dcr.deleteCustomer();
                     break;
                 case 5:
                     
