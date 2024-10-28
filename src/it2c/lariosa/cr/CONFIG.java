@@ -23,7 +23,7 @@ public static Connection connectDB() {
     }
 
 public void addRecord(String sql, String... values) {
-        try (Connection conn = this.connectDB(); // Use the connectDB method
+        try (Connection conn = CONFIG.connectDB(); // Use the connectDB method
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             // Loop through the values and set them in the prepared statement
@@ -45,7 +45,7 @@ public void addRecord(String sql, String... values) {
             return;
         }
 
-        try (Connection conn = this.connectDB();
+        try (Connection conn = CONFIG.connectDB();
              PreparedStatement pstmt = conn.prepareStatement(sqlQuery);
              ResultSet rs = pstmt.executeQuery()) {
 
@@ -76,7 +76,7 @@ public void addRecord(String sql, String... values) {
     }
 
     public void updateRecord(String sql, Object... values) {
-        try (Connection conn = this.connectDB(); // Use the connectDB method
+        try (Connection conn = CONFIG.connectDB(); // Use the connectDB method
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             // Loop through the values and set them in the prepared statement dynamically
@@ -112,7 +112,7 @@ public void addRecord(String sql, String... values) {
     
     
 public void deleteRecord(String sql, Object... values) {
-    try (Connection conn = this.connectDB();
+    try (Connection conn = CONFIG.connectDB();
          PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
         // Loop through the values and set them in the prepared statement dynamically

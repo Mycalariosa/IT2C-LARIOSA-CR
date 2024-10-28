@@ -2,6 +2,7 @@
 package it2c.lariosa.cr;
 import Customer.Customer;
 import java.util.Scanner;
+import ClothingItem.ClothingItem;
 
 public class Main {
     
@@ -14,8 +15,8 @@ public class Main {
             System.out.println("\n|------------------------------------|");
             System.out.println("|    WELCOME TO CLOTHING RENTAL      |");
             System.out.println("|------------------------------------|");
-            System.out.println("| 1. CUSTOMER                        |");
-            System.out.println("| 2. CLOTHING                        |");
+            System.out.println("| 1. CUSTOMER INFORMATION                       |");
+            System.out.println("| 2. CLOTHING ITEMS                        |");
             System.out.println("| 3. RENTAL                          |");
             System.out.println("| 4. EXIT                            |");
             System.out.println("|------------------------------------|");
@@ -28,12 +29,13 @@ public class Main {
                 action = sc.nextInt();
             }
         Customer cr = new Customer();
+        ClothingItem ci = new ClothingItem();
           switch (action) {
                 case 1:
                      cr.customerTransaction();
                     break;
                 case 2:
-                   
+                   ci.clothingTransaction();
                     break;
                 case 3:
                     

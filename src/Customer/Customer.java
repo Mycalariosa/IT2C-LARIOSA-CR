@@ -13,15 +13,15 @@ public class Customer {
         String ch;
 
         do {
-            System.out.println("\n|------------------|");
-            System.out.println("|        MENU      |");
-            System.out.println("|------------------|");
-            System.out.println("| 1. ADD           |");
-            System.out.println("| 2. VIEW          |");
-            System.out.println("| 3. UPDATE        |");
-            System.out.println("| 4. DELETE        |");
-            System.out.println("| 5. EXIT          |");
-            System.out.println("|------------------|");
+            System.out.println("\n|--------------------|");
+            System.out.println("|   CUSTOMER MENU    |");
+            System.out.println("|--------------------|");
+            System.out.println("| 1. ADD CUSTOMER    |");
+            System.out.println("| 2. VIEW CUSTOMER   |");
+            System.out.println("| 3. UPDATE CUSTOMER |");
+            System.out.println("| 4. DELETE CUSTOMER |");
+            System.out.println("| 5. EXIT            |");
+            System.out.println("|--------------------|");
             
             System.out.print("Choose from 1-5: ");
             int action = sc.nextInt();
@@ -57,8 +57,6 @@ public class Customer {
         System.out.println("\nThank you for using This application");
     }
 
-    
-    
     public void addCustomer(){
         Scanner sc = new Scanner(System.in);
         CONFIG conf = new CONFIG();
@@ -76,9 +74,12 @@ public class Customer {
         System.out.print("Contact Number:");
         String contact = sc.next();
         
-        String sql = "INSERT INTO Customer (c_fname, c_lname, c_email, c_contact) VALUES (?, ?, ?, ?)";
+        System.out.print("Address");
+        String address =sc.next();
+        
+        String sql = "INSERT INTO Customer (c_fname, c_lname, c_email, c_contact, c_address) VALUES (?, ?, ?, ?, ?)";
  
-        conf.addRecord(sql, fname, lname, email, contact);
+        conf.addRecord(sql, fname, lname, email, contact, address);
         
     }
     
@@ -87,15 +88,17 @@ public class Customer {
         CONFIG con = new CONFIG();
     
         String lariosaQuery = "SELECT * FROM Customer";
-        String[] lariosaHeaders = {"ID", "FirstName", "Lastname", "Email", "Contact"};
-        String[] lariosaColumns = {"c_id", "c_fname", "c_lname", "c_email", "c_contact"};
+        String[] lariosaHeaders = {"ID", "FirstName", "Lastname", "Email", "Contact", "Address"};
+        String[] lariosaColumns = {"c_id", "c_fname", "c_lname", "c_email", "c_contact", "c_address"};
         
         con.viewRecords(lariosaQuery,lariosaHeaders,lariosaColumns);
     }
 
     private void updateCustomer(){
     Scanner sc = new Scanner (System.in);
-    
+
+        viewCustomer();
+        
         System.out.print("Enter Customer ID:");
         int id =sc.nextInt();
     
@@ -110,35 +113,28 @@ public class Customer {
     
         System.out.print("Enter Contact Number:");
         String number =sc.next();
+        
+        System.out.print("Enter Address:");
+        String address =sc.next();
     
-        String qry = "UPDATE Customer SET c_fname=?, c_lname=?, c_email=?, c_contact=? WHERE c_id = ?";
+        String qry = "UPDATE Customer SET c_fname=?, c_lname=?, c_email=?, c_contact=?, c_address=? WHERE c_id = ?";
     
     CONFIG con = new CONFIG();
-    con.updateRecord (qry, fname, lname, email, number, id);
+    con.updateRecord (qry, fname, lname, email, number,address, id);
     
 }
     private void deleteCustomer(){
-       Scanner sc = new Scanner (System.in); 
+    Scanner sc = new Scanner (System.in); 
+    
+       viewCustomer();
+       
        System.out.print("Enter Customer ID:");
        int id =sc.nextInt();
        
-       String sqlDelete ="DELETE FROM Customer WHERE c_id =?";
+       String sqlDelete ="DELETE FROM Customer WHERE c_ID =?";
        CONFIG con = new CONFIG();
        con.deleteRecord (sqlDelete,id);
                
     }
     
 }
-        
-
-
-    
-      
-
-
-
-            
-            
-            
-    
-
