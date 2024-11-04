@@ -130,4 +130,12 @@ public void deleteRecord(String sql, Object... values) {
         System.out.println("Error deleting record: " + e.getMessage());
     }
 }
+
+    public void addRecord(String sql, String name, String brand, String category, String size, String color, String valueOf, String material, boolean availability) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public void addRecord(String sql, String customerName, int itemId, String details, double pricePerDay, double downPayment, String rentalDate, String returnDate, double totalCost, double balanceLeft) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 }

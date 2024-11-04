@@ -7,19 +7,67 @@ import java.util.Scanner;
 
 public class Rental {
 
+    public void rentalTransaction() {
+        try (Scanner sc = new Scanner(System.in)) {
+            String ch;
+            
+            do {
+                System.out.println("\n|--------------------|");
+                System.out.println("|   RENTAL MENU      |");
+                System.out.println("|--------------------|");
+                System.out.println("| 1. ADD RENTAL      |");
+                System.out.println("| 2. VIEW RENTALS    |");
+                System.out.println("| 3. UPDATE RENTAL    |");
+                System.out.println("| 4. DELETE RENTAL    |");
+                System.out.println("| 5. EXIT            |");
+                System.out.println("|--------------------|");
+                
+                System.out.print("Choose from 1-5: ");
+                int action = sc.nextInt();
+                
+                while (action < 1 || action > 5) {
+                    System.out.print("\tInvalid action. Please enter a number between 1 and 5: ");
+                    action = sc.nextInt();
+                }
+                
+                switch (action) {
+                    case 1:
+                        startRentalProcess();
+                        break;
+                    case 2:
+                        viewRentals();
+                        break;
+                    case 3:
+                        updateRental();
+                        break;
+                    case 4:
+                        deleteRental();
+                        break;
+                    case 5:
+                        break;
+                }
+                
+                System.out.print("\nDo you want to use another system? (Y/N): ");
+                ch = sc.next();
+            } while (ch.equalsIgnoreCase("Y"));
+            
+            System.out.println("\nThank you for using this application");
+        }
+    }
+
     public void startRentalProcess() {
         Scanner sc = new Scanner(System.in);
 
-        // Welcome Message
+        System.out.print("\n------------------------------------\n");
         System.out.println("Welcome to Clothes Rental!");
+        System.out.print("------------------------------------\n");
         System.out.println("Below is the list of items you can borrow:");
 
         ClothingItem clothingItem = new ClothingItem();
-        clothingItem.viewClothingItem();  // Directly calling the method from ClothingItem class
+        clothingItem.viewClothingItem();
 
         System.out.println("\nPlease fill out the following rental form.");
 
-        // Rental Form
         System.out.print("Customer Name: ");
         String customerName = sc.nextLine();
 
@@ -27,7 +75,7 @@ public class Rental {
         int itemId = sc.nextInt();
 
         System.out.print("Details (Size, Color, etc.): ");
-        sc.nextLine();  // Consume newline
+        sc.nextLine();
         String details = sc.nextLine();
 
         System.out.print("Price per Day: ");
@@ -42,11 +90,9 @@ public class Rental {
         System.out.print("Return Date (YYYY-MM-DD): ");
         String returnDate = sc.next();
 
-        // Calculating Total Rental Days
         System.out.print("Number of Rental Days: ");
         int rentalDays = sc.nextInt();
 
-        // Calculating Balance Left
         double totalCost = pricePerDay * rentalDays;
         double balanceLeft = totalCost - downPayment;
 
@@ -57,18 +103,37 @@ public class Rental {
         System.out.println("Down Payment: " + downPayment);
         System.out.println("Balance Left: " + balanceLeft);
 
-        // Saving the Rental Record
-        saveRentalRecord(customerName, itemId, details, pricePerDay, downPayment, rentalDate, returnDate, totalCost, balanceLeft);
     }
 
-    private void saveRentalRecord(String customerName, int itemId, String details, double pricePerDay, double downPayment,
-                                  String rentalDate, String returnDate, double totalCost, double balanceLeft) {
-        CONFIG conf = new CONFIG();
+   private void viewRentals() {
+    CONFIG conf = new CONFIG();
 
-        String sql = "INSERT INTO Rental (customer_name, item_id, details, price_per_day, down_payment, rental_date, return_date, total_cost, balance_left) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        conf.addRecord(sql, customerName, itemId, details, pricePerDay, downPayment, rentalDate, returnDate, totalCost, balanceLeft);
+   
+    String query = "SELECT customer_name, item_id, details, price_per_day, rental_date, return_date, down_payment, "
+                 + "total_cost - down_payment AS remaining_balance, "
+                 + "CASE WHEN return_date < CURRENT_DATE THEN 'Returned' ELSE 'Not Returned' END AS status "
+                 + "FROM Rental";
 
-        System.out.println("\nThank you! Your rental has been recorded.");
+   
+    String[] headers = {
+        "Customer Name", "Item ID", "Details", "Price/Day", "Rental Date",
+        "Return Date", "Down Payment", "Remaining Balance", "Status"
+    };
+    
+    
+    String[] columns = {
+        "customer_name", "item_id", "details", "price_per_day",
+        "rental_date", "return_date", "down_payment", "remaining_balance", "status"
+    };
+
+   
+    conf.viewRecords(query, headers, columns);
+}
+    private void updateRental() {
+       
+    }
+
+    private void deleteRental() {
+       
     }
 }
-

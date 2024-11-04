@@ -4,12 +4,10 @@ package Customer;
 import it2c.lariosa.cr.CONFIG;
 import java.util.Scanner;
 
-
 public class Customer {
-    
-    public void customerTransaction (){
-    
-      Scanner sc = new Scanner(System.in);
+
+    public void customerTransaction() {
+        Scanner sc = new Scanner(System.in);
         String ch;
 
         do {
@@ -22,7 +20,7 @@ public class Customer {
             System.out.println("| 4. DELETE CUSTOMER |");
             System.out.println("| 5. EXIT            |");
             System.out.println("|--------------------|");
-            
+
             System.out.print("Choose from 1-5: ");
             int action = sc.nextInt();
 
@@ -30,23 +28,21 @@ public class Customer {
                 System.out.print("\tInvalid action. Please enter a number between 1 and 5: ");
                 action = sc.nextInt();
             }
-            Customer cr = new Customer();
-            
-          switch (action) {
+
+            switch (action) {
                 case 1:
-                    cr.addCustomer();
+                    addCustomer();
                     break;
                 case 2:
-                    cr.viewCustomer();
+                    viewCustomer();
                     break;
                 case 3:
-                    cr.updateCustomer();
+                    updateCustomer();
                     break;
                 case 4:
-                    cr.deleteCustomer();
+                    deleteCustomer();
                     break;
                 case 5:
-                    
                     break;
             }
 
@@ -54,87 +50,103 @@ public class Customer {
             ch = sc.next();
         } while (ch.equalsIgnoreCase("Y"));
 
-        System.out.println("\nThank you for using This application");
+        System.out.println("\nThank you for using this application");
+        sc.close();
     }
 
-    public void addCustomer(){
+    public void addCustomer() {
         Scanner sc = new Scanner(System.in);
         CONFIG conf = new CONFIG();
-        
+
         System.out.print("------------------------------------");
-        System.out.print("\nCustomers First Name: ");
+        System.out.print("\nCustomer's First Name: ");
         String fname = sc.next();
-        
-        System.out.print("Customers Last Name: ");
+
+        System.out.print("Customer's Last Name: ");
         String lname = sc.next();
-        
+
         System.out.print("Email: ");
         String email = sc.next();
+
+        String contact = "";
+        while (true) {
+            System.out.print("Contact Number: ");
+            contact = sc.next();
+
+            if (contact.matches("\\d{11}")) {
+                break;
+            } else {
+                System.out.println("Invalid contact number. Please enter exactly 11 digits.");
+            }
+        }
+
+        System.out.print("Address: ");
+        String address = sc.next();
         
-        System.out.print("Contact Number:");
-        String contact = sc.next();
+        System.out.print("------------------------------------\n");
         
-        System.out.print("Address");
-        String address =sc.next();
-        
+
         String sql = "INSERT INTO Customer (c_fname, c_lname, c_email, c_contact, c_address) VALUES (?, ?, ?, ?, ?)";
- 
         conf.addRecord(sql, fname, lname, email, contact, address);
-        
     }
-    
 
     private void viewCustomer() {
         CONFIG con = new CONFIG();
-    
+
         String lariosaQuery = "SELECT * FROM Customer";
-        String[] lariosaHeaders = {"ID", "FirstName", "Lastname", "Email", "Contact", "Address"};
+        String[] lariosaHeaders = {"ID", "First Name", "Last Name", "Email", "Contact", "Address"};
         String[] lariosaColumns = {"c_id", "c_fname", "c_lname", "c_email", "c_contact", "c_address"};
-        
-        con.viewRecords(lariosaQuery,lariosaHeaders,lariosaColumns);
+
+        con.viewRecords(lariosaQuery, lariosaHeaders, lariosaColumns);
     }
 
-    private void updateCustomer(){
-    Scanner sc = new Scanner (System.in);
+    private void updateCustomer() {
+        Scanner sc = new Scanner(System.in);
 
         viewCustomer();
-        
-        System.out.print("Enter Customer ID:");
-        int id =sc.nextInt();
-    
-        System.out.print("Enter First Name:");
+
+        System.out.print("Enter Customer ID: ");
+        int id = sc.nextInt();
+
+        System.out.print("Enter First Name: ");
         String fname = sc.next();
-    
-        System.out.print("Enter Last Name:");
-        String lname =sc.next();
-    
-        System.out.print("Enter Email:");
-        String email =sc.next();
-    
-        System.out.print("Enter Contact Number:");
-        String number =sc.next();
-        
-        System.out.print("Enter Address:");
-        String address =sc.next();
-    
+
+        System.out.print("Enter Last Name: ");
+        String lname = sc.next();
+
+        System.out.print("Enter Email: ");
+        String email = sc.next();
+
+        String contact = "";
+        while (true) {
+            System.out.print("Enter Contact Number: ");
+            contact = sc.next();
+
+            if (contact.matches("\\d{11}")) {   
+                break;
+            } else {
+                System.out.println("Invalid contact number. Please enter exactly 11 digits.");
+            }
+        }
+
+        System.out.print("Enter Address: ");
+        String address = sc.next();
+
         String qry = "UPDATE Customer SET c_fname=?, c_lname=?, c_email=?, c_contact=?, c_address=? WHERE c_id = ?";
-    
-    CONFIG con = new CONFIG();
-    con.updateRecord (qry, fname, lname, email, number,address, id);
-    
-}
-    private void deleteCustomer(){
-    Scanner sc = new Scanner (System.in); 
-    
-       viewCustomer();
-       
-       System.out.print("Enter Customer ID:");
-       int id =sc.nextInt();
-       
-       String sqlDelete ="DELETE FROM Customer WHERE c_ID =?";
-       CONFIG con = new CONFIG();
-       con.deleteRecord (sqlDelete,id);
-               
+        CONFIG con = new CONFIG();
+        con.updateRecord(qry, fname, lname, email, contact, address, id);
     }
-    
+
+    private void deleteCustomer() {
+        Scanner sc = new Scanner(System.in);
+
+        viewCustomer();
+
+        System.out.print("Enter Customer ID: ");
+        int id = sc.nextInt();
+
+        String sqlDelete = "DELETE FROM Customer WHERE c_ID = ?";
+        CONFIG con = new CONFIG();
+        con.deleteRecord(sqlDelete, id);
+    }
 }
