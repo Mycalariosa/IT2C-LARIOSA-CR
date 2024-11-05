@@ -1,4 +1,3 @@
-
 package Customer;
 
 import it2c.lariosa.cr.CONFIG;
@@ -6,8 +5,7 @@ import java.util.Scanner;
 
 public class Customer {
 
-    public void customerTransaction() {
-        Scanner sc = new Scanner(System.in);
+    public void customerTransaction(Scanner sc) {
         String ch;
 
         do {
@@ -18,7 +16,6 @@ public class Customer {
             System.out.println("| 2. VIEW CUSTOMER   |");
             System.out.println("| 3. UPDATE CUSTOMER |");
             System.out.println("| 4. DELETE CUSTOMER |");
-            System.out.println("| 5. EXIT            |");
             System.out.println("|--------------------|");
 
             System.out.print("Choose from 1-5: ");
@@ -31,31 +28,27 @@ public class Customer {
 
             switch (action) {
                 case 1:
-                    addCustomer();
+                    addCustomer(sc);
                     break;
                 case 2:
                     viewCustomer();
                     break;
                 case 3:
-                    updateCustomer();
+                    updateCustomer(sc);
                     break;
                 case 4:
-                    deleteCustomer();
-                    break;
-                case 5:
+                    deleteCustomer(sc);
                     break;
             }
 
-            System.out.print("\nDo you want to use another system? (Y/N): ");
+            System.out.print("\nDo you still want to use Customer menu? (Y/N): ");
             ch = sc.next();
         } while (ch.equalsIgnoreCase("Y"));
 
         System.out.println("\nThank you for using this application");
-        sc.close();
     }
 
-    public void addCustomer() {
-        Scanner sc = new Scanner(System.in);
+    public void addCustomer(Scanner sc) {
         CONFIG conf = new CONFIG();
 
         System.out.print("------------------------------------");
@@ -84,7 +77,6 @@ public class Customer {
         String address = sc.next();
         
         System.out.print("------------------------------------\n");
-        
 
         String sql = "INSERT INTO Customer (c_fname, c_lname, c_email, c_contact, c_address) VALUES (?, ?, ?, ?, ?)";
         conf.addRecord(sql, fname, lname, email, contact, address);
@@ -100,9 +92,7 @@ public class Customer {
         con.viewRecords(lariosaQuery, lariosaHeaders, lariosaColumns);
     }
 
-    private void updateCustomer() {
-        Scanner sc = new Scanner(System.in);
-
+    private void updateCustomer(Scanner sc) {
         viewCustomer();
 
         System.out.print("Enter Customer ID: ");
@@ -137,9 +127,7 @@ public class Customer {
         con.updateRecord(qry, fname, lname, email, contact, address, id);
     }
 
-    private void deleteCustomer() {
-        Scanner sc = new Scanner(System.in);
-
+    private void deleteCustomer(Scanner sc) {
         viewCustomer();
 
         System.out.print("Enter Customer ID: ");

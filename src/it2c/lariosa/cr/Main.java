@@ -31,17 +31,17 @@ public class Main {
                     System.out.print("\tInvalid action. Please enter a number between 1 and 4: ");
                     action = sc.nextInt();
                 }
-                
-                Customer cr = new Customer();
-                ClothingItem ci = new ClothingItem();
+          
                 Rental rn = new Rental();
                 
                 switch (action) {
                     case 1:
-                        cr.customerTransaction();
+                        Customer cr = new Customer();
+                        cr.customerTransaction(sc);
                         break;
                     case 2:
-                        ci.clothingTransaction();
+                        ClothingItem ci = new ClothingItem();
+                        ci.clothingTransaction(sc);
                         break;
                     case 3:
                         rn.rentalTransaction();

@@ -1,4 +1,3 @@
-
 package Rental;
 
 import ClothingItem.ClothingItem;
@@ -8,58 +7,54 @@ import java.util.Scanner;
 public class Rental {
 
     public void rentalTransaction() {
-        try (Scanner sc = new Scanner(System.in)) {
-            String ch;
-            
-            do {
-                System.out.println("\n|--------------------|");
-                System.out.println("|   RENTAL MENU      |");
-                System.out.println("|--------------------|");
-                System.out.println("| 1. ADD RENTAL      |");
-                System.out.println("| 2. VIEW RENTALS    |");
-                System.out.println("| 3. UPDATE RENTAL    |");
-                System.out.println("| 4. DELETE RENTAL    |");
-                System.out.println("| 5. EXIT            |");
-                System.out.println("|--------------------|");
-                
-                System.out.print("Choose from 1-5: ");
-                int action = sc.nextInt();
-                
-                while (action < 1 || action > 5) {
-                    System.out.print("\tInvalid action. Please enter a number between 1 and 5: ");
-                    action = sc.nextInt();
-                }
-                
-                switch (action) {
-                    case 1:
-                        startRentalProcess();
-                        break;
-                    case 2:
-                        viewRentals();
-                        break;
-                    case 3:
-                        updateRental();
-                        break;
-                    case 4:
-                        deleteRental();
-                        break;
-                    case 5:
-                        break;
-                }
-                
-                System.out.print("\nDo you want to use another system? (Y/N): ");
-                ch = sc.next();
-            } while (ch.equalsIgnoreCase("Y"));
-            
-            System.out.println("\nThank you for using this application");
-        }
+        Scanner sc = new Scanner(System.in);
+        String ch;
+
+        do {
+            System.out.println("\n|-------------------|");
+            System.out.println("|     RENTAL MENU   |");
+            System.out.println("|-------------------|");
+            System.out.println("| 1. ADD RENTAL     |");
+            System.out.println("| 2. VIEW RENTALS    |");
+            System.out.println("| 3. UPDATE RENTAL  |");
+            System.out.println("| 4. DELETE RENTAL  |");
+            System.out.println("|-------------------|");
+
+            System.out.print("Choose from 1-4: ");
+            int action = sc.nextInt();
+
+            while (action < 1 || action > 4) {
+                System.out.print("\tInvalid action. Please enter a number between 1 and 4: ");
+                action = sc.nextInt();
+            }
+
+            switch (action) {
+                case 1:
+                    addRental(sc);
+                    break;
+                case 2:
+                    viewRentals();
+                    break;
+                case 3:
+                    updateRental(sc);
+                    break;
+                case 4:
+                    deleteRental(sc);
+                    break;
+            }
+
+            System.out.print("\nDo you want to use Rental menu? (Y/N): ");
+            ch = sc.next();
+        } while (ch.equalsIgnoreCase("Y"));
+
+        System.out.println("\nThank you for using the Rental application");
     }
 
-    public void startRentalProcess() {
-        Scanner sc = new Scanner(System.in);
+    public void addRental(Scanner sc) {
+        CONFIG conf = new CONFIG();
 
         System.out.print("\n------------------------------------\n");
-        System.out.println("Welcome to Clothes Rental!");
+        System.out.println("Welcome to Clothing Rental!");
         System.out.print("------------------------------------\n");
         System.out.println("Below is the list of items you can borrow:");
 
@@ -67,73 +62,66 @@ public class Rental {
         clothingItem.viewClothingItem();
 
         System.out.println("\nPlease fill out the following rental form.");
+        System.out.print("\nCustomer ID: ");
+        int customerId = sc.nextInt();
 
-        System.out.print("Customer Name: ");
-        String customerName = sc.nextLine();
+        System.out.print("Clothing Item ID: ");
+        int clothingItemId = sc.nextInt();
 
-        System.out.print("Item to Rent (ID): ");
-        int itemId = sc.nextInt();
+        System.out.print("Rental Start Date (YYYY-MM-DD): ");
+        String startDate = sc.next();
 
-        System.out.print("Details (Size, Color, etc.): ");
-        sc.nextLine();
-        String details = sc.nextLine();
+        System.out.print("Rental End Date (YYYY-MM-DD): ");
+        String endDate = sc.next();
 
-        System.out.print("Price per Day: ");
-        double pricePerDay = sc.nextDouble();
-
-        System.out.print("Down Payment: ");
-        double downPayment = sc.nextDouble();
-
-        System.out.print("Rental Date (YYYY-MM-DD): ");
-        String rentalDate = sc.next();
-
-        System.out.print("Return Date (YYYY-MM-DD): ");
-        String returnDate = sc.next();
-
-        System.out.print("Number of Rental Days: ");
-        int rentalDays = sc.nextInt();
-
-        double totalCost = pricePerDay * rentalDays;
-        double balanceLeft = totalCost - downPayment;
-
-        System.out.println("\nSummary of your Rental:");
-        System.out.println("Customer Name: " + customerName);
-        System.out.println("Item to Rent: " + itemId + " (" + details + ")");
-        System.out.println("Total Cost: " + totalCost);
-        System.out.println("Down Payment: " + downPayment);
-        System.out.println("Balance Left: " + balanceLeft);
-
+        String sql = "INSERT INTO Rental (customer_id, clothing_item_id, rental_start_date, rental_end_date) VALUES (?, ?, ?, ?)";
+        conf.addRecord(sql, customerId, clothingItemId, startDate, endDate);
+        System.out.println("Rental added successfully.");
     }
 
-   private void viewRentals() {
-    CONFIG conf = new CONFIG();
+    private void viewRentals() {
+        CONFIG con = new CONFIG();
 
-   
-    String query = "SELECT customer_name, item_id, details, price_per_day, rental_date, return_date, down_payment, "
-                 + "total_cost - down_payment AS remaining_balance, "
-                 + "CASE WHEN return_date < CURRENT_DATE THEN 'Returned' ELSE 'Not Returned' END AS status "
-                 + "FROM Rental";
+        String query = "SELECT * FROM Rental";
+        String[] headers = {"Rental ID", "Customer ID", "Clothing Item ID", "Start Date", "End Date"};
+        String[] columns = {"rental_id", "customer_id", "clothing_item_id", "rental_start_date", "rental_end_date"};
 
-   
-    String[] headers = {
-        "Customer Name", "Item ID", "Details", "Price/Day", "Rental Date",
-        "Return Date", "Down Payment", "Remaining Balance", "Status"
-    };
-    
-    
-    String[] columns = {
-        "customer_name", "item_id", "details", "price_per_day",
-        "rental_date", "return_date", "down_payment", "remaining_balance", "status"
-    };
-
-   
-    conf.viewRecords(query, headers, columns);
-}
-    private void updateRental() {
-       
+        con.viewRecords(query, headers, columns);
     }
 
-    private void deleteRental() {
-       
+    private void updateRental(Scanner sc) {
+        viewRentals();
+
+        System.out.print("Enter Rental ID to update: ");
+        int rentalId = sc.nextInt();
+
+        System.out.print("New Customer ID: ");
+        int newCustomerId = sc.nextInt();
+
+        System.out.print("New Clothing Item ID: ");
+        int newClothingItemId = sc.nextInt();
+
+        System.out.print("New Rental Start Date (YYYY-MM-DD): ");
+        String newStartDate = sc.next();
+
+        System.out.print("New Rental End Date (YYYY-MM-DD): ");
+        String newEndDate = sc.next();
+
+        String qry = "UPDATE Rental SET customer_id=?, clothing_item_id=?, rental_start_date=?, rental_end_date=? WHERE rental_id=?";
+        CONFIG con = new CONFIG();
+        con.updateRecord(qry, newCustomerId, newClothingItemId, newStartDate, newEndDate, rentalId);
+        System.out.println("Rental updated successfully.");
     }
-}
+
+    private void deleteRental(Scanner sc) {
+        viewRentals();
+
+        System.out.print("Enter Rental ID to delete: ");
+        int rentalId = sc.nextInt();
+
+        String sqlDelete = "DELETE FROM Rental WHERE rental_id=?";
+        CONFIG con = new CONFIG();
+        con.deleteRecord(sqlDelete, rentalId);
+        System.out.println("Rental deleted successfully.");
+    }
+}  

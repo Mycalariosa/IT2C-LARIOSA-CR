@@ -130,12 +130,51 @@ public void deleteRecord(String sql, Object... values) {
         System.out.println("Error deleting record: " + e.getMessage());
     }
 }
-
-    public void addRecord(String sql, String name, String brand, String category, String size, String color, String valueOf, String material, boolean availability) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+public int getCount(String query, int parameter) {
+    int count = 0;
+    try (Connection conn = this.getConnection(); PreparedStatement pstmt = conn.prepareStatement(query)) {
+        pstmt.setInt(1, parameter);
+        ResultSet rs = pstmt.executeQuery();
+        if (rs.next()) {
+            count = rs.getInt(1); // Get the count from the result set
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
     }
-
-    public void addRecord(String sql, String customerName, int itemId, String details, double pricePerDay, double downPayment, String rentalDate, String returnDate, double totalCost, double balanceLeft) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
+    return count;
 }
+
+public void addRecord(String sql, Object... values) {
+    try (Connection conn = CONFIG.connectDB();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+        // Loop through the values and set them in the prepared statement dynamically
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] instanceof Integer) {
+                pstmt.setInt(i + 1, (Integer) values[i]);
+            } else if (values[i] instanceof Double) {
+                pstmt.setDouble(i + 1, (Double) values[i]);
+            } else if (values[i] instanceof Boolean) {
+                pstmt.setBoolean(i + 1, (Boolean) values[i]);
+            } else {
+                pstmt.setString(i + 1, values[i].toString());
+            }
+        }
+
+        pstmt.executeUpdate();
+        System.out.println("Record added successfully!");
+    } catch (SQLException e) {
+        System.out.println("Error adding record: " + e.getMessage());
+    }}
+
+    private Connection getConnection() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    
+    }
+
+    public boolean reqIdExists(String reid) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+}
+    
