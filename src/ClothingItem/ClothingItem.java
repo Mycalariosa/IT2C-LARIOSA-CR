@@ -42,95 +42,71 @@ public class ClothingItem {
                     break;
             }
 
-            System.out.print("\nDo you want to use Item menu? (Y/N): ");
+            System.out.print("\nDo you want to use Clothing Item menu? (Y/N): ");
             ch = sc.next();
         } while (ch.equalsIgnoreCase("Y"));
 
-        System.out.println("\nThank you for using this application");
+        System.out.println("\nThank you for using the Clothing Item application");
     }
 
     public void addClothingItem(Scanner sc) {
         CONFIG conf = new CONFIG();
-        DecimalFormat df = new DecimalFormat("#.00"); // Format for two decimal places
+        DecimalFormat df = new DecimalFormat("#.00");
 
-        System.out.print("------------------------------------");
-        System.out.print("\nName: ");
-        sc.nextLine();
+        System.out.print("\nEnter Clothing Item Name: ");
         String name = sc.nextLine();
-
-        System.out.print("Brand: ");
+        sc.nextLine(); // Consume newline left-over
+        System.out.print("Enter Brand: ");
         String brand = sc.nextLine();
 
-        System.out.print("Category: ");
+        System.out.print("Enter Category: ");
         String category = sc.nextLine();
 
-        String size;
-        do {
-            System.out.print("Size (small, medium, large, extra small, extra large): ");
-            size = sc.nextLine().toLowerCase();
-        } while (!isValidSize(size));
+        System.out.print("Enter Size (small, medium, large, extra small, extra large): ");
+        String size = sc.nextLine().toLowerCase();
 
-        String color;
-        do {
-            System.out.print("Color (numbers not allowed): ");
-            color = sc.nextLine();
-        } while (!isValidColor(color));
-
-        System.out.print("Material: ");
-        String material = sc.nextLine();
+        System.out.print("Enter Color: ");
+        String color = sc.nextLine();
 
         double price;
         while (true) {
-            System.out.print("Price: ");
+            System.out.print("Enter Price: ");
             if (sc.hasNextDouble()) {
                 price = sc.nextDouble();
                 break;
             } else {
                 System.out.println("Invalid price. Please enter a number.");
-                sc.next();
+                sc.next(); 
             }
         }
 
-        
         String formattedPrice = df.format(price);
 
-        String availability;
-        sc.nextLine(); // Clear buffer
-        while (true) {
-            System.out.print("Availability (available/unavailable): ");
-            availability = sc.nextLine().trim().toLowerCase();
-            if (availability.equals("available") || availability.equals("unavailable")) {
-                break;
-            } else {
-                System.out.println("Invalid input. Please enter 'available' or 'unavailable'.");
-            }
-        }
+        System.out.print("Enter Material: ");
+        sc.nextLine(); 
+        String material = sc.nextLine();
 
-        String sql = "INSERT INTO ClothingItem (c_name, c_brand, c_category, c_size, c_color, c_price, c_material, c_availability) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        conf.addRecord(sql, name, brand, category, size, color, formattedPrice, material, availability);
-    }
+        String availability = "available"; // Default availability when adding a new item
 
-    private boolean isValidSize(String size) {
-        return size.equals("small") || size.equals("medium") || size.equals("large") || size.equals("extra small") || size.equals("extra large");
-    }
+        String qry = "INSERT INTO ClothingItem (c_name, c_brand, c_category, c_size, c_color, c_price, c_material, c_availability) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        conf.addRecord(qry, name, brand, category, size, color, formattedPrice, material, availability);
 
-    private boolean isValidColor(String color) {
-        return color.matches("^[A-Za-z]+$");
+        System.out.println("Clothing item added successfully.");
     }
 
     public void viewClothingItem() {
-        CONFIG con = new CONFIG();
+        CONFIG conf = new CONFIG();
 
-        String query = "SELECT * FROM ClothingItem";
+        String query = "SELECT * FROM ClothingItem WHERE c_availability = 'available'";
         String[] headers = {"ID", "Name", "Brand", "Category", "Size", "Color", "Price", "Material", "Availability"};
         String[] columns = {"clothing_ID", "c_name", "c_brand", "c_category", "c_size", "c_color", "c_price", "c_material", "c_availability"};
 
-        con.viewRecords(query, headers, columns);
+        conf.viewRecords(query, headers, columns);
     }
 
     private void updateClothingItem(Scanner sc) {
         CONFIG conf = new CONFIG();
-        DecimalFormat df = new DecimalFormat("#.00"); 
+        DecimalFormat df = new DecimalFormat("#.00");
 
         viewClothingItem();
 
@@ -171,7 +147,6 @@ public class ClothingItem {
             }
         }
 
-        
         String formattedPrice = df.format(price);
 
         System.out.print("Enter Material: ");
@@ -187,20 +162,38 @@ public class ClothingItem {
             }
         } while (!availability.equals("available") && !availability.equals("unavailable"));
 
+        // Check if the item is rented before marking as available
+        String checkRentalQuery = "SELECT COUNT(1) FROM Rental WHERE clothing_item_id = ? AND rental_end_date >= CURDATE()";
+        int rentedCount = conf.checkExistence(checkRentalQuery, id);
         
+        if (rentedCount > 0 && availability.equals("available")) {
+            System.out.println("This item is currently rented and cannot be marked as available.");
+            return;
+        }
+
         String qry = "UPDATE ClothingItem SET c_name=?, c_brand=?, c_category=?, c_size=?, c_color=?, c_price=?, c_material=?, c_availability=? WHERE clothing_ID=?";
         conf.updateRecord(qry, name, brand, category, size, color, formattedPrice, material, availability, id);
     }
 
     private void deleteClothingItem(Scanner sc) {
-        CONFIG conf = new CONFIG();
-
         viewClothingItem();
 
         System.out.print("Enter Clothing Item ID to delete: ");
         int id = sc.nextInt();
 
         String sqlDelete = "DELETE FROM ClothingItem WHERE clothing_ID=?";
-        conf.deleteRecord(sqlDelete, id);
+        CONFIG con = new CONFIG();
+        con.deleteRecord(sqlDelete, id);
+        System.out.println("Clothing item deleted successfully.");
+    }
+
+    private boolean isValidSize(String size) {
+        return size.equals("small") || size.equals("medium") || size.equals("large") ||
+               size.equals("extra small") || size.equals("extra large");
+    }
+
+    private boolean isValidColor(String color) {
+        return !color.matches(".*\\d.*");
     }
 }
+
