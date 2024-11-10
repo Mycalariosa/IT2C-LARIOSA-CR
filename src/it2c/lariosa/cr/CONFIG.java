@@ -72,6 +72,9 @@ public class CONFIG {
             System.out.println("Error deleting record: " + e.getMessage());
         }
     }
+public void viewCustomerList(String query, String[] headers) {
+    viewRecords(query, headers, new String[]{"c_id", "firstname", "lastname"});
+}
 
     // Method to view records with specified headers and columns
     public void viewRecords(String sqlQuery, String[] columnHeaders, String[] columnNames) {
@@ -178,5 +181,21 @@ public class CONFIG {
             System.out.println("Error retrieving single result: " + e.getMessage());
         }
         return result;
+    }
+
+    public double getDoubleValue(String priceQuery, int clothingItemId) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public int getInt(String clothingItemIdQuery, int rentalId) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public String[] viewRecords(String rentalQuery, int rentalId) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public void viewRecords(String rentalQuery, String[] headers, String[] columns, int rentalId) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

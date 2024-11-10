@@ -42,7 +42,7 @@ public class ClothingItem {
                     break;
             }
 
-            System.out.print("\nDo you want to use Clothing Item menu? (Y/N): ");
+            System.out.print("\nDo you still want to use Clothing Item menu? (Y/N): ");
             ch = sc.next();
         } while (ch.equalsIgnoreCase("Y"));
 
