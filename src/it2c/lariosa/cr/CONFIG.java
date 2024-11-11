@@ -222,6 +222,10 @@ public void viewCustomerList(String query, String[] headers) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    public int getSingleIntResult(String clothingItemIdQuery, int rentalId) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
     private static class connection {
 
         private static PreparedStatement prepareStatement(String query) {

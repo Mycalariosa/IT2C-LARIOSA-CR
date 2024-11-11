@@ -30,7 +30,7 @@ public class Rental {
             int action = sc.nextInt();
 
             while (action < 1 || action > 4) {
-                System.out.print("\tInvalid action. Please enter a number between 1 and 4: ");
+                System.out.print("\tInvalid action. Please enter a number between 1 and 5: ");
                 action = sc.nextInt();
             }
 
@@ -42,7 +42,7 @@ public class Rental {
                     viewRentals();
                     break;
                 case 3:
-                    ReturnRental();
+                   ReturnRental(sc);
                     break;
                 case 4:
                     updateRental(sc);
@@ -149,83 +149,80 @@ public class Rental {
 
         System.out.println("Rental added successfully and item marked as unavailable.");
     }
+    
+public void ReturnRental(Scanner sc) {
+    int rentalID;
 
-    public void ReturnRental(Scanner sc) {
-    CONFIG conf = new CONFIG();
-
+    // Prompt the user to enter a valid rental ID
     while (true) {
-        System.out.print("Do you want to return a rental? (Y/N): ");
-        String userResponse = sc.next();
+        System.out.print("Enter your Rental ID: ");
+        if (sc.hasNextInt()) {
+            rentalID = sc.nextInt();
+            sc.nextLine(); // Consume the newline character after the integer
 
-        if (userResponse.equalsIgnoreCase("Y")) {
-            int rentalId;
-
-            while (true) {
-                System.out.print("Enter Rental ID you want to return: ");
-                rentalId = sc.nextInt();
-
-                // Validate if the rental ID exists
-                String queryRentalExistence = "SELECT COUNT(1) FROM Rental WHERE rental_id=?";
-                int rentalExists = conf.checkExistence(queryRentalExistence, rentalId);
-
-                if (rentalExists > 0) {
-                    // Fetch rental details and display them
-                    String queryRentalDetails = "SELECT rental_id, customer_id, clothing_item_id, rental_start_date, rental_end_date FROM Rental WHERE rental_id=?";
-                    try (Connection con = conf.connectDB();
-                         PreparedStatement pst = con.prepareStatement(queryRentalDetails)) {
-                        pst.setInt(1, rentalId);
-                        ResultSet rs = pst.executeQuery();
-
-                        if (rs.next()) {
-                            int clothingItemId = rs.getInt("clothing_item_id");
-                            String rentalStartDate = rs.getString("rental_start_date");
-                            String rentalEndDate = rs.getString("rental_end_date");
-
-                            System.out.println("\nRental Details:");
-                            System.out.printf("Rental ID: %d%n", rentalId);
-                            System.out.printf("Clothing Item ID: %d%n", clothingItemId);
-                            System.out.printf("Rental Start Date: %s%n", rentalStartDate);
-                            System.out.printf("Rental End Date: %s%n", rentalEndDate);
-
-                            // Confirm return and proceed
-                            System.out.print("Confirm return of this rental (Y/N): ");
-                            String confirmReturn = sc.next();
-
-                            if (confirmReturn.equalsIgnoreCase("Y")) {
-                                // Delete rental record and update availability
-                                String deleteRentalQuery = "DELETE FROM Rental WHERE rental_id=?";
-                                conf.deleteRecord(deleteRentalQuery, rentalId);
-
-                                // Update the clothing item's availability to 'available'
-                                String updateAvailabilityQuery = "UPDATE ClothingItem SET c_availability='available' WHERE clothing_ID=?";
-                                conf.updateRecord(updateAvailabilityQuery, clothingItemId);
-
-                                System.out.println("Rental returned successfully and clothing item marked as available.");
-                                break;
-                            } else {
-                                System.out.println("Rental return canceled.");
-                                break;
-                            }
-                        }
-                    } catch (SQLException e) {
-                        System.out.println("Error retrieving rental details: " + e.getMessage());
-                        return;
-                    }
-                } else {
-                    System.out.println("Invalid Rental ID. Please enter a valid ID.");
-                }
+            // Check if the rental ID is valid
+            if (rentalExists(rentalID)) {
+                break; // Valid rental ID, proceed with return process
+            } else {
+                System.out.println("Invalid Rental ID. Please try again.");
             }
-            break; // Exit after processing the return
-        } else if (userResponse.equalsIgnoreCase("N")) {
-            System.out.println("Thank you! Have a nice day.");
-            break;
         } else {
-            System.out.println("Invalid input! Please enter 'Y' for yes or 'N' for no.");
+            System.out.println("Invalid input. Please enter a numeric Rental ID.");
+            sc.next(); // Clear the invalid input
         }
+    }
+
+    // Ask about damages if rental ID is valid
+    System.out.print("Is there any damage to the rental item? (yes/no): ");
+    String damageResponse = sc.nextLine().trim().toLowerCase();
+
+    int damageFee = 0;
+
+    if (damageResponse.equals("yes") || damageResponse.equals("y") || damageResponse.equals("yes") || damageResponse.equals("YES")) {
+        System.out.println("Please select the type of damage:");
+        System.out.println("1. Minimal damage - ₱200");
+        System.out.println("2. Moderate damage - ₱500");
+        System.out.println("3. Severe damage - ₱1000");
+
+        System.out.print("Enter the number corresponding to the damage level: ");
+        int damageLevel = sc.nextInt();
+        sc.nextLine(); // Consume newline left-over
+
+        switch (damageLevel) {
+            case 1:
+                damageFee = 200;
+                break;
+            case 2:
+                damageFee = 500;
+                break;
+            case 3:
+                damageFee = 1000;
+                break;
+            default:
+                System.out.println("Invalid option. Returning rental canceled.");
+                return;
+        }
+    }
+
+    // Process payment
+    System.out.println("The damage fee is: ₱" + damageFee);
+    System.out.print("Proceed with payment? (yes/no): ");
+    String paymentResponse = sc.nextLine().trim().toLowerCase();
+
+    if (paymentResponse.equals("yes") || paymentResponse.equals("y") || paymentResponse.equals("YES") || paymentResponse.equals("Y")) {
+        processPayment(damageFee);
+        System.out.println("Rental returned successfully. Payment processed.");
+    } else {
+        System.out.println("Payment canceled. Rental return not completed.");
     }
 }
 
-            
+// Modify this method to check if the rental ID exists as an integer
+private boolean rentalExists(int rentalID) {
+    // Logic to check if rental ID exists in the system
+    return true; // Replace with actual check
+}
+     
         
     private void displayCustomerDetails() {
         CONFIG conf = new CONFIG();
@@ -376,29 +373,48 @@ public class Rental {
     
     }
     private void deleteRental(Scanner sc) {
-        viewRentals();
+    viewRentals();
 
-        System.out.print("Enter Rental ID to delete: ");
-        int rentalId = sc.nextInt();
+    System.out.print("Enter Rental ID to delete: ");
+    int rentalId = sc.nextInt();
 
-        CONFIG conf = new CONFIG();
+    System.out.print("Are you sure you want to delete this rental? (yes/no): ");
+    String confirmation = sc.next().toLowerCase();
 
+    if (!confirmation.equals("yes")) {
+        System.out.println("Deletion cancelled.");
+        return;
+    }
+
+    CONFIG conf = new CONFIG();
+
+    try {
+        // Retrieve the clothing item ID associated with this rental
         String getClothingItemIdQuery = "SELECT clothing_item_id FROM Rental WHERE rental_id=?";
         int clothingItemId = conf.getSingleIntResult(getClothingItemIdQuery, rentalId);
 
+        // Delete the rental record
         String sqlDelete = "DELETE FROM Rental WHERE rental_id=?";
-        conf.deleteRecord(sqlDelete, rentalId);
+        boolean isDeleted = conf.deleteRecord(sqlDelete, rentalId);
 
-        String checkRentalQuery = "SELECT COUNT(1) FROM Rental WHERE clothing_item_id = ? AND rental_end_date >= CURDATE()";
-        int rentedCount = conf.checkExistence(checkRentalQuery, clothingItemId);
+        if (isDeleted) {
+            // Check if any other active rentals exist for this clothing item
+            String checkRentalQuery = "SELECT COUNT(1) FROM Rental WHERE clothing_item_id = ? AND rental_end_date >= CURDATE()";
+            int rentedCount = conf.checkExistence(checkRentalQuery, clothingItemId);
 
-        if (rentedCount == 0) {
-            String updateAvailabilitySql = "UPDATE ClothingItem SET c_availability='available' WHERE clothing_ID=?";
-            conf.updateRecord(updateAvailabilitySql, clothingItemId);
-            System.out.println("Rental deleted successfully and item marked as available.");
+            if (rentedCount == 0) {
+                // Update availability if no active rentals are found
+                String updateAvailabilitySql = "UPDATE ClothingItem SET c_availability='available' WHERE clothing_ID=?";
+                conf.updateRecord(updateAvailabilitySql, clothingItemId);
+                System.out.println("Rental deleted successfully and item marked as available.");
+            } else {
+                System.out.println("Rental deleted successfully.");
+            }
         } else {
-            System.out.println("Rental deleted successfully.");
+            System.out.println("Rental not found or could not be deleted.");
         }
+    } catch (Exception e) {
+        System.out.println("Error deleting rental: " + e.getMessage());
     }
-
+}
 }
