@@ -165,6 +165,29 @@ public void viewCustomerList(String query, String[] headers) {
             }
         }
     }
+   public void showRentalDetails(String query, int rentalId) {
+    try (PreparedStatement stmt = connection.prepareStatement(query)) {
+        stmt.setInt(1, rentalId);
+        ResultSet rs = stmt.executeQuery();
+
+        if (rs.next()) {
+            System.out.println("Rental Details:");
+            System.out.println("Rental ID: " + rs.getInt("rental_id"));
+            System.out.println("Customer ID: " + rs.getInt("customer_id"));
+            System.out.println("Clothing Item ID: " + rs.getInt("clothing_item_id"));
+            System.out.println("Rental Date: " + rs.getDate("rental_date"));
+            System.out.println("Return Date: " + rs.getDate("return_date"));
+        } else {
+            System.out.println("No details found for the given rental ID.");
+        }
+    } catch (SQLException e) {
+        System.out.println("Error retrieving rental details. Please check the following:");
+        System.out.println("- Ensure the database connection is active.");
+        System.out.println("- Verify that the `rental_id` exists in the database.");
+        System.out.println("- Confirm the query syntax is correct.");
+        e.printStackTrace(); // For detailed error output; consider removing in production
+    }
+}
 
     // Method to retrieve a single result from a query (e.g., price or other attribute)
     public double getSingleResult(String query, int clothingItemId) {
@@ -197,5 +220,15 @@ public void viewCustomerList(String query, String[] headers) {
 
     public void viewRecords(String rentalQuery, String[] headers, String[] columns, int rentalId) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private static class connection {
+
+        private static PreparedStatement prepareStatement(String query) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        public connection() {
+        }
     }
 }

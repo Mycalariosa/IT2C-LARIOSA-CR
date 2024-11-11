@@ -1,6 +1,10 @@
 package Rental;
 
 import it2c.lariosa.cr.CONFIG;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Scanner;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -17,8 +21,9 @@ public class Rental {
             System.out.println("|-------------------|");
             System.out.println("| 1. ADD RENTAL     |");
             System.out.println("| 2. VIEW RENTALS   |");
-            System.out.println("| 3. UPDATE RENTAL  |");
-            System.out.println("| 4. DELETE RENTAL  |");
+            System.out.println("| 3. RETURN RENTAL  |");
+            System.out.println("| 4. UPDATE RENTAL  |");
+            System.out.println("| 5. DELETE RENTAL  |");
             System.out.println("|-------------------|");
 
             System.out.print("Choose from 1-4: ");
@@ -37,9 +42,12 @@ public class Rental {
                     viewRentals();
                     break;
                 case 3:
-                    updateRental(sc);
+                    ReturnRental();
                     break;
                 case 4:
+                    updateRental(sc);
+                    break;
+                case 5:
                     deleteRental(sc);
                     break;
             }
@@ -142,32 +150,83 @@ public class Rental {
         System.out.println("Rental added successfully and item marked as unavailable.");
     }
 
-    private void deleteRental(Scanner sc) {
-        viewRentals();
+    public void ReturnRental(Scanner sc) {
+    CONFIG conf = new CONFIG();
 
-        System.out.print("Enter Rental ID to delete: ");
-        int rentalId = sc.nextInt();
+    while (true) {
+        System.out.print("Do you want to return a rental? (Y/N): ");
+        String userResponse = sc.next();
 
-        CONFIG conf = new CONFIG();
+        if (userResponse.equalsIgnoreCase("Y")) {
+            int rentalId;
 
-        String getClothingItemIdQuery = "SELECT clothing_item_id FROM Rental WHERE rental_id=?";
-        int clothingItemId = conf.getSingleIntResult(getClothingItemIdQuery, rentalId);
+            while (true) {
+                System.out.print("Enter Rental ID you want to return: ");
+                rentalId = sc.nextInt();
 
-        String sqlDelete = "DELETE FROM Rental WHERE rental_id=?";
-        conf.deleteRecord(sqlDelete, rentalId);
+                // Validate if the rental ID exists
+                String queryRentalExistence = "SELECT COUNT(1) FROM Rental WHERE rental_id=?";
+                int rentalExists = conf.checkExistence(queryRentalExistence, rentalId);
 
-        String checkRentalQuery = "SELECT COUNT(1) FROM Rental WHERE clothing_item_id = ? AND rental_end_date >= CURDATE()";
-        int rentedCount = conf.checkExistence(checkRentalQuery, clothingItemId);
+                if (rentalExists > 0) {
+                    // Fetch rental details and display them
+                    String queryRentalDetails = "SELECT rental_id, customer_id, clothing_item_id, rental_start_date, rental_end_date FROM Rental WHERE rental_id=?";
+                    try (Connection con = conf.connectDB();
+                         PreparedStatement pst = con.prepareStatement(queryRentalDetails)) {
+                        pst.setInt(1, rentalId);
+                        ResultSet rs = pst.executeQuery();
 
-        if (rentedCount == 0) {
-            String updateAvailabilitySql = "UPDATE ClothingItem SET c_availability='available' WHERE clothing_ID=?";
-            conf.updateRecord(updateAvailabilitySql, clothingItemId);
-            System.out.println("Rental deleted successfully and item marked as available.");
+                        if (rs.next()) {
+                            int clothingItemId = rs.getInt("clothing_item_id");
+                            String rentalStartDate = rs.getString("rental_start_date");
+                            String rentalEndDate = rs.getString("rental_end_date");
+
+                            System.out.println("\nRental Details:");
+                            System.out.printf("Rental ID: %d%n", rentalId);
+                            System.out.printf("Clothing Item ID: %d%n", clothingItemId);
+                            System.out.printf("Rental Start Date: %s%n", rentalStartDate);
+                            System.out.printf("Rental End Date: %s%n", rentalEndDate);
+
+                            // Confirm return and proceed
+                            System.out.print("Confirm return of this rental (Y/N): ");
+                            String confirmReturn = sc.next();
+
+                            if (confirmReturn.equalsIgnoreCase("Y")) {
+                                // Delete rental record and update availability
+                                String deleteRentalQuery = "DELETE FROM Rental WHERE rental_id=?";
+                                conf.deleteRecord(deleteRentalQuery, rentalId);
+
+                                // Update the clothing item's availability to 'available'
+                                String updateAvailabilityQuery = "UPDATE ClothingItem SET c_availability='available' WHERE clothing_ID=?";
+                                conf.updateRecord(updateAvailabilityQuery, clothingItemId);
+
+                                System.out.println("Rental returned successfully and clothing item marked as available.");
+                                break;
+                            } else {
+                                System.out.println("Rental return canceled.");
+                                break;
+                            }
+                        }
+                    } catch (SQLException e) {
+                        System.out.println("Error retrieving rental details: " + e.getMessage());
+                        return;
+                    }
+                } else {
+                    System.out.println("Invalid Rental ID. Please enter a valid ID.");
+                }
+            }
+            break; // Exit after processing the return
+        } else if (userResponse.equalsIgnoreCase("N")) {
+            System.out.println("Thank you! Have a nice day.");
+            break;
         } else {
-            System.out.println("Rental deleted successfully.");
+            System.out.println("Invalid input! Please enter 'Y' for yes or 'N' for no.");
         }
     }
+}
 
+            
+        
     private void displayCustomerDetails() {
         CONFIG conf = new CONFIG();
         String query = "SELECT c_id, c_fname, c_lname FROM Customer";
@@ -190,7 +249,81 @@ public class Rental {
         String[] headers = {"Rental ID", "Customer ID", "Clothing Item ID"};
         String[] columns = {"rental_id", "customer_id", "clothing_item_id"};
         con.viewRecords(query, headers, columns);
+
+        Scanner sc = new Scanner(System.in);
+        System.out.print("\nWould you like to view an individual rental report? (Y/N): ");
+        String choice = sc.nextLine();
+        if (choice.equalsIgnoreCase("Y")) {
+            indivRentalReport();
+        }
     }
+
+    public void indivRentalReport() {
+        Scanner sc = new Scanner(System.in);
+        CONFIG conf = new CONFIG();
+
+        System.out.print("Enter Rental ID you want to view: ");
+        int rentalId = sc.nextInt();
+
+        // Validate if the rental ID exists
+        String queryExistence = "SELECT COUNT(1) FROM Rental WHERE rental_id=?";
+        int exists = conf.checkExistence(queryExistence, rentalId);
+
+        if (exists == 0) {
+            System.out.println("\tERROR: Rental ID doesn't exist.");
+            return;
+        }
+
+        // Fetch rental and customer details
+        String query = "SELECT r.*, c.c_fname, c.c_lname, c.c_contact, c.c_email "
+                     + "FROM Rental r "
+                     + "JOIN Customer c ON r.customer_id = c.c_id "
+                     + "WHERE r.rental_id = ?";
+
+        try (Connection con = conf.connectDB();
+             PreparedStatement pst = con.prepareStatement(query)) {
+            pst.setInt(1, rentalId);
+            ResultSet rs = pst.executeQuery();
+
+            if (rs.next()) {
+                String firstName = rs.getString("c_fname");
+                String lastName = rs.getString("c_lname");
+                String customerId = rs.getString("customer_id");
+                String contact = rs.getString("c_contact");
+                String email = rs.getString("c_email");
+                String rentalStartDate = rs.getString("rental_start_date");
+                String rentalEndDate = rs.getString("rental_end_date");
+                double rentalFee = rs.getDouble("r_price");
+                double totalAmount = rs.getDouble("total_price");
+                double payment = rs.getDouble("payment");
+               int rentalDays = rs.getInt("num_days");
+
+                System.out.println("\n***************************************************************************");
+                System.out.println("                          RENTAL REPORT STATEMENT                          ");
+                System.out.println("***************************************************************************");
+                System.out.printf("%-20s: %-30s%n", "Rental ID", rentalId);
+                System.out.printf("%-20s: %-30s%n", "Customer Name", firstName + " " + lastName);
+                System.out.printf("%-20s: %-30s%n", "Customer ID", customerId);
+                System.out.printf("%-20s: %-30s%n", "Contact", contact);
+                System.out.printf("%-20s: %-30s%n", "Email", email);
+                System.out.printf("%-20s: %-30s%n", "Rental Start Date", rentalStartDate);
+                System.out.printf("%-20s: %-30s%n", "Rental End Date", rentalEndDate);
+                System.out.println("---------------------------------------------------------------------------");
+                System.out.printf("%-20s: %-30s PHP %.2f%n", "Rental Fee per Day", "", rentalFee);
+                System.out.printf("%-20s: %-30s %d days%n", "Number of Rental Days", "", rentalDays);
+                System.out.printf("%-20s: %-30s PHP %.2f%n", "Total Amount to pay", "", totalAmount);
+                System.out.printf("%-20s: %-30s PHP %.2f%n", "Total Payments made", "", payment);
+                System.out.println("***************************************************************************");
+
+            } else {
+                System.out.println("No rental report found for the given Rental ID.");
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error retrieving rental report: " + e.getMessage());
+        }
+    }
+
 
     private void updateRental(Scanner sc) {
         viewRentals();
@@ -240,5 +373,32 @@ public class Rental {
         CONFIG con = new CONFIG();
         con.updateRecord(qry, newCustomerId, newClothingItemId, newStartDateStr, newEndDateStr, newNumDays, newDailyPrice, newTotalPrice, newPayment, newChange, rentalId);
         System.out.println("Rental updated successfully.");
+    
     }
+    private void deleteRental(Scanner sc) {
+        viewRentals();
+
+        System.out.print("Enter Rental ID to delete: ");
+        int rentalId = sc.nextInt();
+
+        CONFIG conf = new CONFIG();
+
+        String getClothingItemIdQuery = "SELECT clothing_item_id FROM Rental WHERE rental_id=?";
+        int clothingItemId = conf.getSingleIntResult(getClothingItemIdQuery, rentalId);
+
+        String sqlDelete = "DELETE FROM Rental WHERE rental_id=?";
+        conf.deleteRecord(sqlDelete, rentalId);
+
+        String checkRentalQuery = "SELECT COUNT(1) FROM Rental WHERE clothing_item_id = ? AND rental_end_date >= CURDATE()";
+        int rentedCount = conf.checkExistence(checkRentalQuery, clothingItemId);
+
+        if (rentedCount == 0) {
+            String updateAvailabilitySql = "UPDATE ClothingItem SET c_availability='available' WHERE clothing_ID=?";
+            conf.updateRecord(updateAvailabilitySql, clothingItemId);
+            System.out.println("Rental deleted successfully and item marked as available.");
+        } else {
+            System.out.println("Rental deleted successfully.");
+        }
+    }
+
 }
