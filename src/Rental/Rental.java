@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.Scanner;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import ClothingItem.ClothingItem;
 
 public class Rental {
 
@@ -26,10 +27,10 @@ public class Rental {
             System.out.println("| 5. DELETE RENTAL  |");
             System.out.println("|-------------------|");
 
-            System.out.print("Choose from 1-4: ");
+            System.out.print("Choose from 1-5: ");
             int action = sc.nextInt();
 
-            while (action < 1 || action > 4) {
+            while (action < 1 || action > 5) {
                 System.out.print("\tInvalid action. Please enter a number between 1 and 5: ");
                 action = sc.nextInt();
             }
@@ -61,6 +62,7 @@ public class Rental {
 
     public void addRental(Scanner sc) {
         CONFIG conf = new CONFIG();
+        ClothingItem clothingItem = new ClothingItem();
 
         System.out.print("\n------------------------------------\n");
         System.out.println("Welcome to Clothing Rental!");
@@ -89,19 +91,24 @@ public class Rental {
             }
         }
 
-        int clothingItemId;
-        while (true) {
-            System.out.print("Clothing Item ID: ");
-            clothingItemId = sc.nextInt();
-
-            String queryClothing = "SELECT COUNT(1) FROM ClothingItem WHERE clothing_ID=?";
-            int clothingExists = conf.checkExistence(queryClothing, clothingItemId);
-
-            if (clothingExists > 0) {
-                break;
-            } else {
-                System.out.println("Invalid Clothing Item ID. Please enter a valid ID.");
-            }
+        int clothingItemId = 0;
+       System.out.print("Enter Clothing Item ID to rent: ");
+        int id = sc.nextInt();
+        
+        // Check if the item is available
+        String availabilityQuery = "SELECT c_availability FROM ClothingItem WHERE clothing_ID = ?";
+        String currentAvailability = conf.getRecord(availabilityQuery, id);
+        
+        if (currentAvailability != null && currentAvailability.equalsIgnoreCase("available")) {
+            // Proceed with rental process
+            String rentalQuery = "INSERT INTO Rental (clothing_item_id, rental_start_date, rental_end_date) VALUES (?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 7 DAY))";
+            conf.addRecord(rentalQuery, id);
+            
+            // Update clothing item status to unavailable
+            clothingItem.updateAvailability(id, "unavailable");
+            System.out.println("Rental added successfully and clothing item marked as unavailable.");
+        } else {
+            System.out.println("Clothing item is not available for rent.");
         }
 
         sc.nextLine(); 
@@ -149,54 +156,174 @@ public class Rental {
 
         System.out.println("Rental added successfully and item marked as unavailable.");
     }
+     private void viewRentals() {
+    CONFIG con = new CONFIG();
+    // SQL query to fetch rental data including status from the Rental table
+    String query = "SELECT rental_id, customer_id, clothing_item_id, r_status FROM Rental";
     
-public void ReturnRental(Scanner sc) {
-    int rentalID;
-
-    // Prompt the user to enter a valid rental ID
-    while (true) {
-        System.out.print("Enter your Rental ID: ");
-        if (sc.hasNextInt()) {
-            rentalID = sc.nextInt();
-            sc.nextLine(); // Consume the newline character after the integer
-
-            // Check if the rental ID is valid
-            if (rentalExists(rentalID)) {
-                break; // Valid rental ID, proceed with return process
-            } else {
-                System.out.println("Invalid Rental ID. Please try again.");
+    // Define headers and columns for the table display
+    String[] headers = {"Rental ID", "Customer ID", "Clothing Item ID", "Status"};
+    
+    // Get the records using getRecords method
+    ResultSet rs = null;
+    try {
+        rs = con.getRecords(query, new String[]{"rental_id", "customer_id", "clothing_item_id", "r_status"});
+        
+        // Check if result set is empty
+        if (rs != null && !rs.isBeforeFirst()) {
+            System.out.println("No rental records found.");
+            return;
+        }
+        
+        // Print the table header
+        System.out.println("\n|----------------------------------------------------|");
+        System.out.println("|                   RENTAL LIST                    |");
+        System.out.println("|----------------------------------------------------|");
+        System.out.printf("| %-15s %-15s %-20s %-10s |\n", headers[0], headers[1], headers[2], headers[3]);
+        System.out.println("|----------------------------------------------------|");
+        
+        // Process and display the records
+        while (rs.next()) {
+            int rentalId = rs.getInt("rental_id");
+            int customerId = rs.getInt("customer_id");
+            int clothingItemId = rs.getInt("clothing_item_id");
+            String rStatus = rs.getString("r_status");
+            
+            if (null == rStatus) {
+                rStatus = "rented";  // Default status if null
+            } else // Check if rStatus is null and assign default value
+            switch (rStatus) {
+                case "R":
+                    rStatus = "rented";  // If "R" is stored in the database, show as "rented"
+                    break;
+                case "C":
+                    rStatus = "returned";  // If "C" is stored in the database, show as "returned"
+                    break;
+                default:
+                    break;
             }
-        } else {
-            System.out.println("Invalid input. Please enter a numeric Rental ID.");
-            sc.next(); // Clear the invalid input
+            
+            // Print out each record with proper formatting
+            System.out.printf("| %-15d %-15d %-20d %-10s |\n", rentalId, customerId, clothingItemId, rStatus);
+        }
+        
+        System.out.println("|----------------------------------------------------|");
+
+        // Prompt user if they want to view individual rental report
+        Scanner sc = new Scanner(System.in);
+        System.out.print("\nWould you like to view an individual rental report? (Y/N): ");
+        String choice = sc.nextLine();
+        if (choice.equalsIgnoreCase("Y")) {
+            indivRentalReport();
+        }
+
+    } catch (SQLException e) {
+        System.out.println("Error displaying rental records: " + e.getMessage());
+    } finally {
+        // Ensure the ResultSet is closed to prevent resource leaks
+        try {
+            if (rs != null) {
+                rs.close();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error closing ResultSet: " + e.getMessage());
         }
     }
+}
 
-    // Ask about damages if rental ID is valid
-    System.out.print("Is there any damage to the rental item? (yes/no): ");
-    String damageResponse = sc.nextLine().trim().toLowerCase();
+public void ReturnRental(Scanner sc) {
+    CONFIG conf = new CONFIG();
+    ClothingItem clothingItem = new ClothingItem(); // Assuming ClothingItem class exists
+
+    System.out.println("\n---------------------------- Current Rented Items ----------------------------");
+    displayRentedItems(); // Display all rented items before prompting
+
+    int rentalId;
+    boolean validId = false;
+
+    do {
+        System.out.print("Enter Rental ID you want to return: ");
+        rentalId = sc.nextInt();
+
+        // Validate if the rental ID exists
+        String queryExistence = "SELECT COUNT(1) FROM Rental WHERE rental_id=?";
+        int exists = conf.checkExistence(queryExistence, rentalId);
+
+        if (exists == 0) {
+            System.out.println("\tERROR: Rental ID doesn't exist.");
+            System.out.print("Would you like to try again? (Y/N): ");
+            String retry = sc.next();
+            if (!retry.equalsIgnoreCase("Y")) {
+                System.out.println("Exiting return process.");
+                return;
+            }
+        } else {
+            validId = true; // ID is valid, exit the loop
+        }
+    } while (!validId);
+
+    String getEndDateQuery = "SELECT rental_end_date, r_price FROM Rental WHERE rental_id=?";
+    LocalDate rentalEndDate;
+    double dailyRate;
+
+    try (Connection con = conf.connectDB();
+         PreparedStatement pst = con.prepareStatement(getEndDateQuery)) {
+        pst.setInt(1, rentalId);
+        ResultSet rs = pst.executeQuery();
+
+        if (rs.next()) {
+            rentalEndDate = LocalDate.parse(rs.getString("rental_end_date"));
+            dailyRate = rs.getDouble("r_price");
+
+            System.out.println("\nRental End Date (must be returned by): " + rentalEndDate);
+        } else {
+            System.out.println("Rental end date not found. Please check the Rental ID.");
+            return;
+        }
+    } catch (SQLException e) {
+        System.out.println("Error retrieving rental end date: " + e.getMessage());
+        return;
+    }
+
+    System.out.print("Enter today's date (YYYY-MM-DD): ");
+    String todayDateStr = sc.next();
+    LocalDate todayDate = LocalDate.parse(todayDateStr);
 
     int damageFee = 0;
+    if (todayDate.isAfter(rentalEndDate)) {
+        long lateDays = ChronoUnit.DAYS.between(rentalEndDate, todayDate);
+        double lateFee = lateDays * dailyRate;
+        System.out.printf("Late return fee for %d day(s): PHP %.2f%n", lateDays, lateFee);
+        damageFee += lateFee;
+    }
 
-    if (damageResponse.equals("yes") || damageResponse.equals("y") || damageResponse.equals("yes") || damageResponse.equals("YES")) {
-        System.out.println("Please select the type of damage:");
-        System.out.println("1. Minimal damage - ₱200");
-        System.out.println("2. Moderate damage - ₱500");
-        System.out.println("3. Severe damage - ₱1000");
+    System.out.println("\n---------------------------------------");
+    System.out.println("|       Damage Type       |   Charge   |");
+    System.out.println("---------------------------------------");
+    System.out.println("| 1. Minimal damage        |   ₱200     |");
+    System.out.println("| 2. Moderate damage       |   ₱500     |");
+    System.out.println("| 3. Severe damage         |   ₱1000    |");
+    System.out.println("---------------------------------------");
+    System.out.println("\nNote: Additional charges apply for late returns.");
 
+    sc.nextLine(); // Consume newline left-over
+    System.out.print("\nIs there any damage to the rental item? (yes/no): ");
+    String damageResponse = sc.nextLine().trim().toLowerCase();
+
+    if (damageResponse.equals("yes") || damageResponse.equals("y")) {
         System.out.print("Enter the number corresponding to the damage level: ");
         int damageLevel = sc.nextInt();
         sc.nextLine(); // Consume newline left-over
 
         switch (damageLevel) {
             case 1:
-                damageFee = 200;
+                damageFee += 200;
                 break;
             case 2:
-                damageFee = 500;
+                damageFee += 500;
                 break;
             case 3:
-                damageFee = 1000;
+                damageFee += 1000;
                 break;
             default:
                 System.out.println("Invalid option. Returning rental canceled.");
@@ -204,26 +331,32 @@ public void ReturnRental(Scanner sc) {
         }
     }
 
-    // Process payment
-    System.out.println("The damage fee is: ₱" + damageFee);
+    System.out.println("\nTotal additional charge (including late and damage fees): PHP " + damageFee);
     System.out.print("Proceed with payment? (yes/no): ");
     String paymentResponse = sc.nextLine().trim().toLowerCase();
 
-    if (paymentResponse.equals("yes") || paymentResponse.equals("y") || paymentResponse.equals("YES") || paymentResponse.equals("Y")) {
+    if (paymentResponse.equals("yes") || paymentResponse.equals("y")) {
         processPayment(damageFee);
+
+        // Update the r_status to "returned"
+        String updateStatusQuery = "UPDATE Rental SET r_status = 'returned' WHERE rental_id = ?";
+        try (Connection con = conf.connectDB();
+             PreparedStatement pst = con.prepareStatement(updateStatusQuery)) {
+            pst.setInt(1, rentalId);
+            int rowsUpdated = pst.executeUpdate();
+            if (rowsUpdated > 0) {
+                System.out.println("Rental status updated to 'returned'.");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error updating rental status: " + e.getMessage());
+        }
+
         System.out.println("Rental returned successfully. Payment processed.");
     } else {
         System.out.println("Payment canceled. Rental return not completed.");
     }
 }
 
-// Modify this method to check if the rental ID exists as an integer
-private boolean rentalExists(int rentalID) {
-    // Logic to check if rental ID exists in the system
-    return true; // Replace with actual check
-}
-     
-        
     private void displayCustomerDetails() {
         CONFIG conf = new CONFIG();
         String query = "SELECT c_id, c_fname, c_lname FROM Customer";
@@ -238,21 +371,6 @@ private boolean rentalExists(int rentalID) {
         String[] headers = {"ID", "Name", "Price"};
         String[] columns = {"clothing_ID", "c_name","c_price"};
         conf.viewRecords(query, headers, columns);
-    }
-
-    private void viewRentals() {
-        CONFIG con = new CONFIG();
-        String query = "SELECT rental_id, customer_id, clothing_item_id FROM Rental";
-        String[] headers = {"Rental ID", "Customer ID", "Clothing Item ID"};
-        String[] columns = {"rental_id", "customer_id", "clothing_item_id"};
-        con.viewRecords(query, headers, columns);
-
-        Scanner sc = new Scanner(System.in);
-        System.out.print("\nWould you like to view an individual rental report? (Y/N): ");
-        String choice = sc.nextLine();
-        if (choice.equalsIgnoreCase("Y")) {
-            indivRentalReport();
-        }
     }
 
     public void indivRentalReport() {
@@ -372,8 +490,7 @@ private boolean rentalExists(int rentalID) {
         System.out.println("Rental updated successfully.");
     
     }
-    private void deleteRental(Scanner sc) {
-    viewRentals();
+   private void deleteRental(Scanner sc) {
 
     System.out.print("Enter Rental ID to delete: ");
     int rentalId = sc.nextInt();
@@ -398,12 +515,12 @@ private boolean rentalExists(int rentalID) {
         boolean isDeleted = conf.deleteRecord(sqlDelete, rentalId);
 
         if (isDeleted) {
-            // Check if any other active rentals exist for this clothing item
+            // Check if there are any other active rentals for this clothing item
             String checkRentalQuery = "SELECT COUNT(1) FROM Rental WHERE clothing_item_id = ? AND rental_end_date >= CURDATE()";
             int rentedCount = conf.checkExistence(checkRentalQuery, clothingItemId);
 
             if (rentedCount == 0) {
-                // Update availability if no active rentals are found
+                // If no active rentals, update availability of the clothing item
                 String updateAvailabilitySql = "UPDATE ClothingItem SET c_availability='available' WHERE clothing_ID=?";
                 conf.updateRecord(updateAvailabilitySql, clothingItemId);
                 System.out.println("Rental deleted successfully and item marked as available.");
@@ -414,7 +531,38 @@ private boolean rentalExists(int rentalID) {
             System.out.println("Rental not found or could not be deleted.");
         }
     } catch (Exception e) {
+        // Provide more specific error handling
         System.out.println("Error deleting rental: " + e.getMessage());
     }
 }
+
+
+   private void displayRentedItems() {
+    CONFIG con = new CONFIG();
+    String query = "SELECT rental_id, customer_id, clothing_item_id FROM Rental";
+    String[] headers = {"Rental ID", "Customer ID", "Clothing Item ID"};
+    String[] columns = {"rental_id", "customer_id", "clothing_item_id"};
+    con.viewRecords(query, headers, columns);
 }
+
+
+private void processPayment(int requiredAmount) {
+    Scanner sc = new Scanner(System.in);
+    double payment = 0;
+
+    // Continuously prompt until payment meets or exceeds the required amount
+    while (payment < requiredAmount) {
+        System.out.print("Enter payment amount: ");
+        double amountEntered = sc.nextDouble();
+
+        payment += amountEntered;
+
+        if (payment < requiredAmount) {
+            System.out.printf("Insufficient amount. You still owe: PHP %.2f%n", (requiredAmount - payment));
+        }
+    }
+
+    // Calculate and display change, if any
+    double change = payment - requiredAmount;
+    System.out.printf("Payment successful. Change: PHP %.2f%n", change);
+}}

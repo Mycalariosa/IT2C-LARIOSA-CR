@@ -205,6 +205,80 @@ public void viewCustomerList(String query, String[] headers) {
         }
         return result;
     }
+public String getAvailabilityStatus(int clothingItemId) {
+        String status = null;
+        String query = "SELECT c_availability FROM ClothingItem WHERE clothing_ID = ?";
+        try (Connection conn = connectDB();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, clothingItemId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                status = rs.getString("c_availability");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error retrieving availability status: " + e.getMessage());
+        }
+        return status;
+    }
+
+public boolean deleteRecord(String sqlQuery, int id) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sqlQuery)) {
+            
+            // Set the parameter for the prepared statement (the rental ID)
+            stmt.setInt(1, id);
+
+            // Execute the delete query
+            int rowsAffected = stmt.executeUpdate();
+
+            // If rowsAffected is greater than 0, it means the deletion was successful
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.out.println("Error executing delete query: " + e.getMessage());
+            return false;
+        }
+    }
+public String getRecord(String query, int parameter) {
+    String result = null;
+    try (Connection conn = connectDB();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+        pstmt.setInt(1, parameter);
+        try (ResultSet rs = pstmt.executeQuery()) {
+            if (rs.next()) {
+                result = rs.getString(1); // Get the string result from the first column
+            }
+        }
+    } catch (SQLException e) {
+        System.out.println("Error retrieving record: " + e.getMessage());
+    }
+    return result;
+}
+public Integer getIntegerRecord(String query, int parameter) {
+    Integer result = null;
+    try (Connection conn = connectDB();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+        pstmt.setInt(1, parameter);
+        try (ResultSet rs = pstmt.executeQuery()) {
+            if (rs.next()) {
+                result = rs.getInt(1); // Get the integer result from the first column
+            }
+        }
+    } catch (SQLException e) {
+        System.out.println("Error retrieving record: " + e.getMessage());
+    }
+    return result;
+}
+public ResultSet getRecords(String query, String[] columns) {
+        ResultSet resultSet = null;
+        Connection con = connectDB();
+        try {
+            PreparedStatement pst = con.prepareStatement(query);
+            resultSet = pst.executeQuery(); // Execute the query and get the result
+        } catch (SQLException e) {
+            System.out.println("Error executing query: " + e.getMessage());
+        }
+        return resultSet; // Return the ResultSet for processing
+    }
 
     public double getDoubleValue(String priceQuery, int clothingItemId) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -223,6 +297,10 @@ public void viewCustomerList(String query, String[] headers) {
     }
 
     public int getSingleIntResult(String clothingItemIdQuery, int rentalId) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private Connection getConnection() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 

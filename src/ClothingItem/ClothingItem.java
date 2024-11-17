@@ -94,10 +94,21 @@ public class ClothingItem {
         System.out.println("Clothing item added successfully.");
     }
 
+    // Method to update the availability of a clothing item
+    public void updateAvailability(int id, String newStatus) {
+        CONFIG conf = new CONFIG();
+        
+        String qry = "UPDATE ClothingItem SET c_availability = ? WHERE clothing_ID = ?";
+        conf.updateRecord(qry, newStatus, id);
+        
+        System.out.println("Clothing item availability updated successfully.");
+    }
+
+    // View all clothing items, showing their availability
     public void viewClothingItem() {
         CONFIG conf = new CONFIG();
 
-        String query = "SELECT * FROM ClothingItem WHERE c_availability = 'available'";
+        String query = "SELECT * FROM ClothingItem";  // No filter, shows all items regardless of availability
         String[] headers = {"ID", "Name", "Brand", "Category", "Size", "Color", "Price", "Material", "Availability"};
         String[] columns = {"clothing_ID", "c_name", "c_brand", "c_category", "c_size", "c_color", "c_price", "c_material", "c_availability"};
 
@@ -108,7 +119,7 @@ public class ClothingItem {
         CONFIG conf = new CONFIG();
         DecimalFormat df = new DecimalFormat("#.00");
 
-        viewClothingItem();
+        viewClothingItem();  // Display items before updating
 
         System.out.print("Enter Clothing Item ID to update: ");
         int id = sc.nextInt();
@@ -171,8 +182,12 @@ public class ClothingItem {
             return;
         }
 
+        // Update the clothing item details in the database
         String qry = "UPDATE ClothingItem SET c_name=?, c_brand=?, c_category=?, c_size=?, c_color=?, c_price=?, c_material=?, c_availability=? WHERE clothing_ID=?";
         conf.updateRecord(qry, name, brand, category, size, color, formattedPrice, material, availability, id);
+        
+        // Show updated clothing items after the update
+        viewClothingItem();
     }
 
     private void deleteClothingItem(Scanner sc) {
@@ -195,5 +210,14 @@ public class ClothingItem {
     private boolean isValidColor(String color) {
         return !color.matches(".*\\d.*");
     }
-}
 
+    // This method will be called after renting an item, marking it as unavailable
+    public void markAsUnavailable(int clothingItemId) {
+        updateAvailability(clothingItemId, "unavailable");
+    }
+
+    // This method will be called after returning an item, marking it as available
+    public void markAsAvailable(int clothingItemId) {
+        updateAvailability(clothingItemId, "available");
+    }
+}
