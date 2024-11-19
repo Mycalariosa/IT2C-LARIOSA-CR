@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class CONFIG {
 
@@ -253,6 +254,7 @@ public String getRecord(String query, int parameter) {
     }
     return result;
 }
+
 public Integer getIntegerRecord(String query, int parameter) {
     Integer result = null;
     try (Connection conn = connectDB();
@@ -268,6 +270,7 @@ public Integer getIntegerRecord(String query, int parameter) {
     }
     return result;
 }
+
 public ResultSet getRecords(String query, String[] columns) {
         ResultSet resultSet = null;
         Connection con = connectDB();

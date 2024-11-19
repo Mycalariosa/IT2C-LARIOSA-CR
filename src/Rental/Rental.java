@@ -9,6 +9,7 @@ import java.util.Scanner;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import ClothingItem.ClothingItem;
+import java.util.ArrayList;
 
 public class Rental {
 
@@ -60,102 +61,100 @@ public class Rental {
         System.out.println("\nThank you for using the Rental application");
     }
 
-    public void addRental(Scanner sc) {
-        CONFIG conf = new CONFIG();
-        ClothingItem clothingItem = new ClothingItem();
+  public void addRental(Scanner sc) {
+    CONFIG conf = new CONFIG();
+    ClothingItem clothingItem = new ClothingItem();
 
-        System.out.print("\n------------------------------------\n");
-        System.out.println("Welcome to Clothing Rental!");
-        System.out.print("------------------------------------\n");
-        System.out.println("Below is the list that you can borrow:");
+    System.out.print("\n------------------------------------\n");
+    System.out.println("Welcome to Clothing Rental!");
+    System.out.print("------------------------------------\n");
+    System.out.println("Below is the list that you can borrow:");
 
-        System.out.println("-----------------------------Customers--------------------------------------");
-        displayCustomerDetails();
-        System.out.println("--------------------------Clothing Item-------------------------------------");
-        displayAvailableClothingItems();
+    System.out.println("-----------------------------Customers--------------------------------------");
+    displayCustomerDetails();
+    System.out.println("--------------------------Clothing Item-------------------------------------");
+    displayAvailableClothingItems();
 
-        System.out.println("\nPlease fill out the following rental form.");
+    System.out.println("\nPlease fill out the following rental form.");
 
-        int customerId;
-        while (true) {
-            System.out.print("Customer ID: ");
-            customerId = sc.nextInt();
+    int customerId;
+    while (true) {
+        System.out.print("Customer ID: ");
+        customerId = sc.nextInt();
 
-            String query = "SELECT COUNT(1) FROM Customer WHERE c_id=?";
-            int exists = conf.checkExistence(query, customerId);
+        String query = "SELECT COUNT(1) FROM Customer WHERE c_id=?";
+        int exists = conf.checkExistence(query, customerId);
 
-            if (exists > 0) {
-                break;
-            } else {
-                System.out.println("Invalid Customer ID. Please enter an existing one.");
-            }
+        if (exists > 0) {
+            break;
+        } else {
+            System.out.println("Invalid Customer ID. Please enter an existing one.");
         }
+    }
 
-        int clothingItemId = 0;
-       System.out.print("Enter Clothing Item ID to rent: ");
-        int id = sc.nextInt();
-        
+    int clothingItemId;
+    while (true) {
+        System.out.print("Enter Clothing Item ID to rent: ");
+        clothingItemId = sc.nextInt();
+
         // Check if the item is available
         String availabilityQuery = "SELECT c_availability FROM ClothingItem WHERE clothing_ID = ?";
-        String currentAvailability = conf.getRecord(availabilityQuery, id);
-        
+        String currentAvailability = conf.getRecord(availabilityQuery, clothingItemId);
+
         if (currentAvailability != null && currentAvailability.equalsIgnoreCase("available")) {
             // Proceed with rental process
-            String rentalQuery = "INSERT INTO Rental (clothing_item_id, rental_start_date, rental_end_date) VALUES (?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 7 DAY))";
-            conf.addRecord(rentalQuery, id);
-            
-            // Update clothing item status to unavailable
-            clothingItem.updateAvailability(id, "unavailable");
-            System.out.println("Rental added successfully and clothing item marked as unavailable.");
+            break;
         } else {
-            System.out.println("Clothing item is not available for rent.");
+            System.out.println("Clothing item is not available for rent. Please try another item.");
         }
-
-        sc.nextLine(); 
-        System.out.print("------------------------------------\n");
-
-        System.out.print("Rental Start Date (YYYY-MM-DD): ");
-        String startDateStr = sc.next();
-
-        System.out.print("Rental End Date (YYYY-MM-DD): ");
-        String endDateStr = sc.next();
-
-        LocalDate startDate = LocalDate.parse(startDateStr);
-        LocalDate endDate = LocalDate.parse(endDateStr);
-        System.out.print("------------------------------------\n");
-
-        long numDays = ChronoUnit.DAYS.between(startDate, endDate);
-        System.out.println("Number of Days: " + numDays);
-
-        System.out.print("------------------------------------\n");
-
-        System.out.print("Price per Day: ");
-        double dailyPrice = sc.nextDouble();
-
-        double totalPrice = numDays * dailyPrice;
-        System.out.printf("Total Price: %.2f\n", totalPrice);
-
-        double payment = 0;
-        while (payment < totalPrice) {
-            System.out.print("Payment: ");
-            payment = sc.nextDouble();
-            if (payment < totalPrice) {
-                System.out.println("Not enough payment. Please input a new amount.");
-            }
-        }
-        System.out.print("------------------------------------\n");
-
-        double change = payment - totalPrice;
-        System.out.printf("Change: %.2f\n", change);
-
-        String sql = "INSERT INTO Rental (customer_id, clothing_item_id, rental_start_date, rental_end_date, num_days, r_price, total_price, payment, change) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        conf.addRecord(sql, customerId, clothingItemId, startDateStr, endDateStr, numDays, dailyPrice, totalPrice, payment, change);
-        
-        String updateAvailabilitySql = "UPDATE ClothingItem SET c_availability='unavailable' WHERE clothing_ID=?";
-        conf.updateRecord(updateAvailabilitySql, clothingItemId);
-
-        System.out.println("Rental added successfully and item marked as unavailable.");
     }
+
+    sc.nextLine(); 
+    System.out.print("------------------------------------\n");
+
+    System.out.print("Rental Start Date (YYYY-MM-DD): ");
+    String startDateStr = sc.next();
+
+    System.out.print("Rental End Date (YYYY-MM-DD): ");
+    String endDateStr = sc.next();
+
+    LocalDate startDate = LocalDate.parse(startDateStr);
+    LocalDate endDate = LocalDate.parse(endDateStr);
+    System.out.print("------------------------------------\n");
+
+    long numDays = ChronoUnit.DAYS.between(startDate, endDate);
+    System.out.println("Number of Days: " + numDays);
+
+    System.out.print("------------------------------------\n");
+
+    System.out.print("Price per Day: ");
+    double dailyPrice = sc.nextDouble();
+
+    double totalPrice = numDays * dailyPrice;
+    System.out.printf("Total Price: %.2f\n", totalPrice);
+
+    double payment = 0;
+    while (payment < totalPrice) {
+        System.out.print("Payment: ");
+        payment = sc.nextDouble();
+        if (payment < totalPrice) {
+            System.out.println("Not enough payment. Please input a new amount.");
+        }
+    }
+    System.out.print("------------------------------------\n");
+
+    double change = payment - totalPrice;
+    System.out.printf("Change: %.2f\n", change);
+
+    String sql = "INSERT INTO Rental (customer_id, clothing_item_id, rental_start_date, rental_end_date, num_days, r_price, total_price, payment, change) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    conf.addRecord(sql, customerId, clothingItemId, startDateStr, endDateStr, numDays, dailyPrice, totalPrice, payment, change);
+
+    String updateAvailabilitySql = "UPDATE ClothingItem SET c_availability='unavailable' WHERE clothing_ID=?";
+    conf.updateRecord(updateAvailabilitySql, clothingItemId);
+
+    System.out.println("Rental added successfully and item marked as unavailable.");
+} 
+
      private void viewRentals() {
     CONFIG con = new CONFIG();
     // SQL query to fetch rental data including status from the Rental table
@@ -265,6 +264,7 @@ public void ReturnRental(Scanner sc) {
     String getEndDateQuery = "SELECT rental_end_date, r_price FROM Rental WHERE rental_id=?";
     LocalDate rentalEndDate;
     double dailyRate;
+    double lateFee = 0.0;
 
     try (Connection con = conf.connectDB();
          PreparedStatement pst = con.prepareStatement(getEndDateQuery)) {
@@ -291,11 +291,11 @@ public void ReturnRental(Scanner sc) {
 
     int damageFee = 0;
     if (todayDate.isAfter(rentalEndDate)) {
-        long lateDays = ChronoUnit.DAYS.between(rentalEndDate, todayDate);
-        double lateFee = lateDays * dailyRate;
-        System.out.printf("Late return fee for %d day(s): PHP %.2f%n", lateDays, lateFee);
-        damageFee += lateFee;
-    }
+    long lateDays = ChronoUnit.DAYS.between(rentalEndDate, todayDate);
+    lateFee = lateDays * (dailyRate + 200); // Modified calculation: daily rate plus 200 pesos per day
+    System.out.printf("Late return fee for %d day(s): PHP %.2f%n", lateDays, lateFee);
+    damageFee += lateFee;
+}
 
     System.out.println("\n---------------------------------------");
     System.out.println("|       Damage Type       |   Charge   |");
@@ -304,7 +304,7 @@ public void ReturnRental(Scanner sc) {
     System.out.println("| 2. Moderate damage       |   ₱500     |");
     System.out.println("| 3. Severe damage         |   ₱1000    |");
     System.out.println("---------------------------------------");
-    System.out.println("\nNote: Additional charges apply for late returns.");
+    System.out.println("\nNote: Additional charges apply for late returns.(dailyprice+200)");
 
     sc.nextLine(); // Consume newline left-over
     System.out.print("\nIs there any damage to the rental item? (yes/no): ");
@@ -338,11 +338,14 @@ public void ReturnRental(Scanner sc) {
     if (paymentResponse.equals("yes") || paymentResponse.equals("y")) {
         processPayment(damageFee);
 
-        // Update the r_status to "returned"
-        String updateStatusQuery = "UPDATE Rental SET r_status = 'returned' WHERE rental_id = ?";
+        // Update the r_status to "returned", set damage_charge, late_return_charge, and current_date
+        String updateStatusQuery = "UPDATE Rental SET r_status = 'returned', damage_charge = ?, late_return_charge = ?, current_date = ? WHERE rental_id = ?";
         try (Connection con = conf.connectDB();
              PreparedStatement pst = con.prepareStatement(updateStatusQuery)) {
-            pst.setInt(1, rentalId);
+            pst.setDouble(1, damageFee - lateFee); // Only the damage fee
+            pst.setDouble(2, lateFee); // Late return charge
+            pst.setDate(3, java.sql.Date.valueOf(todayDate)); // Setting current date as return date
+            pst.setInt(4, rentalId);
             int rowsUpdated = pst.executeUpdate();
             if (rowsUpdated > 0) {
                 System.out.println("Rental status updated to 'returned'.");
@@ -357,6 +360,7 @@ public void ReturnRental(Scanner sc) {
     }
 }
 
+
     private void displayCustomerDetails() {
         CONFIG conf = new CONFIG();
         String query = "SELECT c_id, c_fname, c_lname FROM Customer";
@@ -366,19 +370,25 @@ public void ReturnRental(Scanner sc) {
     }
 
     private void displayAvailableClothingItems() {
-        CONFIG conf = new CONFIG();
-        String query = "SELECT clothing_ID, c_name, c_price FROM ClothingItem WHERE c_availability='available'";
-        String[] headers = {"ID", "Name", "Price"};
-        String[] columns = {"clothing_ID", "c_name","c_price"};
-        conf.viewRecords(query, headers, columns);
-    }
+    CONFIG conf = new CONFIG();
+    String query = "SELECT clothing_ID, c_name, c_price, c_availability FROM ClothingItem";
+    String[] headers = {"ID", "Name", "Price", "Availability"};
+    String[] columns = {"clothing_ID", "c_name", "c_price", "c_availability"};
 
-    public void indivRentalReport() {
-        Scanner sc = new Scanner(System.in);
-        CONFIG conf = new CONFIG();
+    // Call the method to display records with the updated columns
+    conf.viewRecords(query, headers, columns);
+}
 
+
+ public void indivRentalReport() {
+    Scanner sc = new Scanner(System.in);
+    CONFIG conf = new CONFIG();
+    boolean validId = false;
+    int rentalId = 0; // Declare rentalId here
+
+    do {
         System.out.print("Enter Rental ID you want to view: ");
-        int rentalId = sc.nextInt();
+        rentalId = sc.nextInt();
 
         // Validate if the rental ID exists
         String queryExistence = "SELECT COUNT(1) FROM Rental WHERE rental_id=?";
@@ -386,109 +396,160 @@ public void ReturnRental(Scanner sc) {
 
         if (exists == 0) {
             System.out.println("\tERROR: Rental ID doesn't exist.");
-            return;
-        }
-
-        // Fetch rental and customer details
-        String query = "SELECT r.*, c.c_fname, c.c_lname, c.c_contact, c.c_email "
-                     + "FROM Rental r "
-                     + "JOIN Customer c ON r.customer_id = c.c_id "
-                     + "WHERE r.rental_id = ?";
-
-        try (Connection con = conf.connectDB();
-             PreparedStatement pst = con.prepareStatement(query)) {
-            pst.setInt(1, rentalId);
-            ResultSet rs = pst.executeQuery();
-
-            if (rs.next()) {
-                String firstName = rs.getString("c_fname");
-                String lastName = rs.getString("c_lname");
-                String customerId = rs.getString("customer_id");
-                String contact = rs.getString("c_contact");
-                String email = rs.getString("c_email");
-                String rentalStartDate = rs.getString("rental_start_date");
-                String rentalEndDate = rs.getString("rental_end_date");
-                double rentalFee = rs.getDouble("r_price");
-                double totalAmount = rs.getDouble("total_price");
-                double payment = rs.getDouble("payment");
-               int rentalDays = rs.getInt("num_days");
-
-                System.out.println("\n***************************************************************************");
-                System.out.println("                          RENTAL REPORT STATEMENT                          ");
-                System.out.println("***************************************************************************");
-                System.out.printf("%-20s: %-30s%n", "Rental ID", rentalId);
-                System.out.printf("%-20s: %-30s%n", "Customer Name", firstName + " " + lastName);
-                System.out.printf("%-20s: %-30s%n", "Customer ID", customerId);
-                System.out.printf("%-20s: %-30s%n", "Contact", contact);
-                System.out.printf("%-20s: %-30s%n", "Email", email);
-                System.out.printf("%-20s: %-30s%n", "Rental Start Date", rentalStartDate);
-                System.out.printf("%-20s: %-30s%n", "Rental End Date", rentalEndDate);
-                System.out.println("---------------------------------------------------------------------------");
-                System.out.printf("%-20s: %-30s PHP %.2f%n", "Rental Fee per Day", "", rentalFee);
-                System.out.printf("%-20s: %-30s %d days%n", "Number of Rental Days", "", rentalDays);
-                System.out.printf("%-20s: %-30s PHP %.2f%n", "Total Amount to pay", "", totalAmount);
-                System.out.printf("%-20s: %-30s PHP %.2f%n", "Total Payments made", "", payment);
-                System.out.println("***************************************************************************");
-
-            } else {
-                System.out.println("No rental report found for the given Rental ID.");
+            System.out.print("Would you like to try again? (Y/N): ");
+            String retry = sc.next();
+            if (!retry.equalsIgnoreCase("Y")) {
+                System.out.println("Exiting view rental process.");
+                return;
             }
-
-        } catch (SQLException e) {
-            System.out.println("Error retrieving rental report: " + e.getMessage());
+        } else {
+            validId = true; // ID is valid, exit the loop
+            System.out.println("Rental ID is valid. Displaying rental summary...");
+            // Code to display rental summary goes here
         }
+    } while (!validId);
+
+
+    // Query to fetch detailed rental information
+    String query = "SELECT r.*, c.c_fname, c.c_lname, c.c_contact, c.c_email, ci.c_name "
+                 + "FROM Rental r "
+                 + "JOIN Customer c ON r.customer_id = c.c_id "
+                 + "JOIN ClothingItem ci ON r.clothing_item_id = ci.clothing_ID "
+                 + "WHERE r.rental_id = ?";
+
+    try (Connection con = CONFIG.connectDB();
+         PreparedStatement pst = con.prepareStatement(query)) {
+        pst.setInt(1, rentalId);
+        ResultSet rs = pst.executeQuery();
+
+        if (rs.next()) {
+            // Retrieve and format all necessary data
+            String firstName = rs.getString("c_fname");
+            String lastName = rs.getString("c_lname");
+            String customerId = rs.getString("customer_id");
+            String contact = rs.getString("c_contact");
+            String email = rs.getString("c_email");
+            String clothingName = rs.getString("c_name");
+            String rentalStartDate = rs.getString("rental_start_date");
+            String rentalEndDate = rs.getString("rental_end_date");
+            double rentalFee = rs.getDouble("r_price");
+            double totalAmount = rs.getDouble("total_price");
+            double payment = rs.getDouble("payment");
+            int rentalDays = rs.getInt("num_days");
+            String rentalStatus = rs.getString("r_status");
+            double damageCharge = rs.getDouble("damage_charge");
+            double lateReturnCharge = rs.getDouble("late_return_charge");
+            double change = rs.getDouble("change");
+          
+
+            // Print the rental report in a well-structured format
+            System.out.println("\n***************************************************************************");
+            System.out.println("                          RENTAL REPORT STATEMENT                          ");
+            System.out.println("***************************************************************************");
+            System.out.printf("%-30s: %-30s%n", "Rental ID", rentalId);
+            System.out.printf("%-30s: %-30s%n", "Customer Name", firstName + " " + lastName);
+            System.out.printf("%-30s: %-30s%n", "Customer ID", customerId);
+            System.out.printf("%-30s: %-30s%n", "Contact", contact);
+            System.out.printf("%-30s: %-30s%n", "Email", email);
+            System.out.printf("%-30s: %-30s%n", "Clothing Item", clothingName);
+            System.out.printf("%-30s: %-30s%n", "Rental Start Date", rentalStartDate);
+            System.out.printf("%-30s: %-30s%n", "Rental End Date", rentalEndDate);
+            System.out.println("---------------------------------------------------------------------------");
+            System.out.printf("%-30s: PHP %-30.2f%n", "Rental Fee per Day", rentalFee);
+            System.out.printf("%-30s: %-30ddays%n", "Number of Rental Days", rentalDays);
+            System.out.printf("%-30s: PHP %-30.2f%n", "Total Amount Due", totalAmount);
+            System.out.printf("%-30s: PHP %-30.2f%n", "Total Charge for Damages", damageCharge);
+            System.out.printf("%-30s: PHP %-30.2f%n", "Charge for Late Return", lateReturnCharge);
+            System.out.printf("%-30s: PHP %-30.2f%n", "Total Payments Made", payment-change + damageCharge + lateReturnCharge);
+            System.out.println("***************************************************************************");
+
+        } else {
+            System.out.println("No rental report found for the given Rental ID.");
+        }
+
+    } catch (SQLException e) {
+        System.out.println("Error retrieving rental report: " + e.getMessage());
     }
+}
+
 
 
     private void updateRental(Scanner sc) {
-        viewRentals();
+     CONFIG conf = new CONFIG();
+        // Display all active rentals (not returned)
+    System.out.println("\n--------------------------- Active Rentals ---------------------------");
+String query = "SELECT rental_id, customer_id, clothing_item_id, rental_start_date, rental_end_date FROM Rental WHERE r_status='rented'";
+String[] headers = {"Rental ID", "Customer ID", "Clothing Item ID", "Start Date", "End Date"};
+String[] columns = {"rental_id", "customer_id", "clothing_item_id", "rental_start_date", "rental_end_date"};
+conf.viewRecords(query, headers, columns);
 
-        System.out.print("Enter Rental ID to update: ");
-        int rentalId = sc.nextInt();
+boolean validId = false;
+int rentalId;
 
-        System.out.print("New Customer ID: ");
-        int newCustomerId = sc.nextInt();
+do {
+    System.out.print("Enter Rental ID you want to return: ");
+    rentalId = sc.nextInt();
 
-        System.out.print("New Clothing Item ID: ");
-        int newClothingItemId = sc.nextInt();
+    // Validate if the rental ID exists and has 'rented' status
+    String queryExistence = "SELECT COUNT(1) FROM Rental WHERE rental_id=? AND r_status='rented'";
+    int exists = conf.checkExistence(queryExistence, rentalId);
 
-        sc.nextLine();
-
-        System.out.print("New Rental Start Date (YYYY-MM-DD): ");
-        String newStartDateStr = sc.next();
-
-        System.out.print("New Rental End Date (YYYY-MM-DD): ");
-        String newEndDateStr = sc.next();
-
-        LocalDate newStartDate = LocalDate.parse(newStartDateStr);
-        LocalDate newEndDate = LocalDate.parse(newEndDateStr);
-
-        long newNumDays = ChronoUnit.DAYS.between(newStartDate, newEndDate);
-        System.out.println("Number of Days (computed automatically): " + newNumDays);
-
-        System.out.print("New Price per Day: ");
-        double newDailyPrice = sc.nextDouble();
-
-        double newTotalPrice = newNumDays * newDailyPrice;
-        System.out.printf("New Total Price: %.2f\n", newTotalPrice);
-
-        double newPayment = 0;
-        while (newPayment < newTotalPrice) {
-            System.out.print("New Payment: ");
-            newPayment = sc.nextDouble();
-            if (newPayment < newTotalPrice) {
-                System.out.println("Not enough payment. Please input a new amount.");
-            }
+    if (exists == 0) {
+        System.out.println("\tERROR: Rental ID doesn't exist or is not currently rented.");
+        System.out.print("Would you like to try again? (Y/N): ");
+        String retry = sc.next();
+        if (!retry.equalsIgnoreCase("Y")) {
+            System.out.println("Exiting return process.");
+            return; // Exit the method if the user doesn't want to try again
         }
+    } else {
+        validId = true; // ID is valid, exit the loop
+    }
+} while (!validId);
 
-        double newChange = newPayment - newTotalPrice;
-        System.out.printf("New Remaining Balance: %.2f\n", newChange);
+// Proceed with collecting the remaining input and updating the record
+System.out.print("New Customer ID: ");
+int newCustomerId = sc.nextInt();
 
-        String qry = "UPDATE Rental SET customer_id=?, clothing_item_id=?, rental_start_date=?, rental_end_date=?, num_days=?, r_price=?, total_price=?, payment=?, change=? WHERE rental_id=?";
-        CONFIG con = new CONFIG();
-        con.updateRecord(qry, newCustomerId, newClothingItemId, newStartDateStr, newEndDateStr, newNumDays, newDailyPrice, newTotalPrice, newPayment, newChange, rentalId);
-        System.out.println("Rental updated successfully.");
-    
+System.out.print("New Clothing Item ID: ");
+int newClothingItemId = sc.nextInt();
+
+sc.nextLine();
+
+System.out.print("New Rental Start Date (YYYY-MM-DD): ");
+String newStartDateStr = sc.next();
+
+System.out.print("New Rental End Date (YYYY-MM-DD): ");
+String newEndDateStr = sc.next();
+
+LocalDate newStartDate = LocalDate.parse(newStartDateStr);
+LocalDate newEndDate = LocalDate.parse(newEndDateStr);
+
+long newNumDays = ChronoUnit.DAYS.between(newStartDate, newEndDate);
+System.out.println("Number of Days (computed automatically): " + newNumDays);
+
+System.out.print("New Price per Day: ");
+double newDailyPrice = sc.nextDouble();
+
+double newTotalPrice = newNumDays * newDailyPrice;
+System.out.printf("New Total Price: %.2f\n", newTotalPrice);
+
+double newPayment = 0;
+while (newPayment < newTotalPrice) {
+    System.out.print("New Payment: ");
+    newPayment = sc.nextDouble();
+    if (newPayment < newTotalPrice) {
+        System.out.println("Not enough payment. Please input a new amount.");
+    }
+}
+
+double newChange = newPayment - newTotalPrice;
+System.out.printf("New Remaining Balance: %.2f\n", newChange);
+
+String qry = "UPDATE Rental SET customer_id=?, clothing_item_id=?, rental_start_date=?, rental_end_date=?, num_days=?, r_price=?, total_price=?, payment=?, change=? WHERE rental_id=?";
+CONFIG con = new CONFIG();
+con.updateRecord(qry, newCustomerId, newClothingItemId, newStartDateStr, newEndDateStr, newNumDays, newDailyPrice, newTotalPrice, newPayment, newChange, rentalId);
+System.out.println("Rental updated successfully.");
     }
    private void deleteRental(Scanner sc) {
 
