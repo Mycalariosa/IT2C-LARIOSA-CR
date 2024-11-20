@@ -16,6 +16,8 @@ public class Rental {
     public void rentalTransaction() {
         Scanner sc = new Scanner(System.in);
         String ch;
+        Scanner in = new Scanner (System.in);
+        String another =null;
 
         do {
             System.out.println("\n|-------------------|");
@@ -26,14 +28,26 @@ public class Rental {
             System.out.println("| 3. RETURN RENTAL  |");
             System.out.println("| 4. UPDATE RENTAL  |");
             System.out.println("| 5. DELETE RENTAL  |");
+            System.out.println("| 6. EXIT           |");
             System.out.println("|-------------------|");
 
-            System.out.print("Choose from 1-5: ");
-            int action = sc.nextInt();
+            int action = -1;  // Initialize with an invalid action
+            boolean validInput = false;
 
-            while (action < 1 || action > 5) {
-                System.out.print("\tInvalid action. Please enter a number between 1 and 5: ");
-                action = sc.nextInt();
+            // Loop until a valid integer between 1 and 5 is entered
+            while (!validInput) {
+                System.out.print("Choose from 1-6: ");
+                if (sc.hasNextInt()) {
+                    action = sc.nextInt();
+                    if (action >= 1 && action <= 6) {
+                        validInput = true;
+                    } else {
+                        System.out.println("\nInvalid action. Please enter a number between 1 and 6.");
+                    }
+                } else {
+                    System.out.println("\nInvalid input. Please enter a number.");
+                    sc.next(); // Clear the invalid input
+                }
             }
 
             switch (action) {
@@ -52,13 +66,21 @@ public class Rental {
                 case 5:
                     deleteRental(sc);
                     break;
+                case 6:
+                    System.out.println("Thanks UWU -_-");
+                    return;
             }
 
-            System.out.print("\nDo you want to use Rental menu? (Y/N): ");
-            ch = sc.next();
-        } while (ch.equalsIgnoreCase("Y"));
-
-        System.out.println("\nThank you for using the Rental application");
+            
+            System.out.print("\nDo you still want to use Rental menu? (Y/N): ");
+            another = in.next().trim();
+            
+            while(!another.equals("Yes")&&!another.equals("yes")&&!another.equals("YES")&&!another.equals("y")&&!another.equals("Y")&&!another.equals("n")&&!another.equals("N")&&!another.equals("No")&&!another.equals("NO")&&!another.equals("no")){
+                System.out.println("Enter again:");
+                another=in.next().trim();
+        }
+            }while (another.equals("YES")||another.equals("yes")||another.equals("Yes")||another.equals("y")||another.equals("Y"));
+                System.out.println("Thamkyou for using Rental Application");
     }
 
   public void addRental(Scanner sc) {
@@ -175,60 +197,70 @@ public class Rental {
         }
         
         // Print the table header
-        System.out.println("\n|----------------------------------------------------|");
-        System.out.println("|                   RENTAL LIST                    |");
-        System.out.println("|----------------------------------------------------|");
-        System.out.printf("| %-15s %-15s %-20s %-10s |\n", headers[0], headers[1], headers[2], headers[3]);
-        System.out.println("|----------------------------------------------------|");
-        
-        // Process and display the records
-        while (rs.next()) {
-            int rentalId = rs.getInt("rental_id");
-            int customerId = rs.getInt("customer_id");
-            int clothingItemId = rs.getInt("clothing_item_id");
-            String rStatus = rs.getString("r_status");
-            
-            if (null == rStatus) {
-                rStatus = "rented";  // Default status if null
-            } else // Check if rStatus is null and assign default value
-            switch (rStatus) {
-                case "R":
-                    rStatus = "rented";  // If "R" is stored in the database, show as "rented"
-                    break;
-                case "C":
-                    rStatus = "returned";  // If "C" is stored in the database, show as "returned"
-                    break;
-                default:
-                    break;
-            }
-            
-            // Print out each record with proper formatting
-            System.out.printf("| %-15d %-15d %-20d %-10s |\n", rentalId, customerId, clothingItemId, rStatus);
-        }
-        
-        System.out.println("|----------------------------------------------------|");
+System.out.println("|----------------------------------------------------------- ----------------|");
+System.out.println("|                               RENTAL LIST                                  |");
+System.out.println("|----------------------------------------------------------------------------|");
+System.out.printf("| %-15s | %-15s | %-20s | %-15s |\n", headers[0], headers[1], headers[2], headers[3]);
+System.out.println("|----------------------------------------------------------------------------|");
 
-        // Prompt user if they want to view individual rental report
-        Scanner sc = new Scanner(System.in);
-        System.out.print("\nWould you like to view an individual rental report? (Y/N): ");
-        String choice = sc.nextLine();
-        if (choice.equalsIgnoreCase("Y")) {
-            indivRentalReport();
-        }
-
-    } catch (SQLException e) {
-        System.out.println("Error displaying rental records: " + e.getMessage());
-    } finally {
-        // Ensure the ResultSet is closed to prevent resource leaks
-        try {
-            if (rs != null) {
-                rs.close();
-            }
-        } catch (SQLException e) {
-            System.out.println("Error closing ResultSet: " + e.getMessage());
+// Process and display the records
+while (rs.next()) {
+    int rentalId = rs.getInt("rental_id");
+    int customerId = rs.getInt("customer_id");
+    int clothingItemId = rs.getInt("clothing_item_id");
+    String rStatus = rs.getString("r_status");
+    
+    if (rStatus == null) {
+        rStatus = "rented";  // Default status if null
+    } else {
+        // Map database values to descriptive status
+        switch (rStatus) {
+            case "R":
+                rStatus = "rented";
+                break;
+            case "C":
+                rStatus = "returned";
+                break;
+            default:
+                break;
         }
     }
+    
+    // Print out each record with proper formatting
+    System.out.printf("| %-15d | %-15d | %-20d | %-15s |\n", rentalId, customerId, clothingItemId, rStatus);
 }
+
+System.out.println("|----------------------------------------------------------------------------|");
+
+
+        Scanner sc = new Scanner(System.in);
+String choice;
+
+do {
+    System.out.print("\nWould you like to view an individual rental report? (Y/N): ");
+    choice = sc.nextLine().trim();
+
+    if (!choice.equalsIgnoreCase("Y") && !choice.equalsIgnoreCase("N")) {
+        System.out.println("Invalid input. Please enter Y for Yes or N for No.");
+    }
+} while (!choice.equalsIgnoreCase("Y") && !choice.equalsIgnoreCase("N"));
+
+if (choice.equalsIgnoreCase("Y")) {
+    indivRentalReport();
+}
+
+} catch (SQLException e) {
+    System.out.println("Error displaying rental records: " + e.getMessage());
+} finally {
+    // Ensure the ResultSet is closed to prevent resource leaks
+    try {
+        if (rs != null) {
+            rs.close();
+        }
+    } catch (SQLException e) {
+        System.out.println("Error closing ResultSet: " + e.getMessage());
+    }
+    }}
 
 public void ReturnRental(Scanner sc) {
     CONFIG conf = new CONFIG();
@@ -456,7 +488,7 @@ public void ReturnRental(Scanner sc) {
             System.out.printf("%-30s: %-30s%n", "Rental End Date", rentalEndDate);
             System.out.println("---------------------------------------------------------------------------");
             System.out.printf("%-30s: PHP %-30.2f%n", "Rental Fee per Day", rentalFee);
-            System.out.printf("%-30s: %-30ddays%n", "Number of Rental Days", rentalDays);
+            System.out.printf("%-30s: %-1ddays%n", "Number of Rental Days", rentalDays);
             System.out.printf("%-30s: PHP %-30.2f%n", "Total Amount Due", totalAmount);
             System.out.printf("%-30s: PHP %-30.2f%n", "Total Charge for Damages", damageCharge);
             System.out.printf("%-30s: PHP %-30.2f%n", "Charge for Late Return", lateReturnCharge);

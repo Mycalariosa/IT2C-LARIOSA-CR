@@ -6,27 +6,39 @@ import java.util.Scanner;
 public class Customer {
 
     public void customerTransaction(Scanner sc) {
-        String ch;
+        String ch=null;
+        Scanner in = new Scanner (System.in);
+        String another =null;
 
         do {
-            System.out.println("\n|--------------------|");
-            System.out.println("|   CUSTOMER MENU    |");
-            System.out.println("|--------------------|");
-            System.out.println("| 1. ADD CUSTOMER    |");
-            System.out.println("| 2. VIEW CUSTOMER   |");
-            System.out.println("| 3. UPDATE CUSTOMER |");
-            System.out.println("| 4. DELETE CUSTOMER |");
-            System.out.println("|--------------------|");
+                System.out.println("\n|--------------------|");
+                System.out.println("|   CUSTOMER MENU    |");
+                System.out.println("|--------------------|");
+                System.out.println("| 1. ADD CUSTOMER    |");
+                System.out.println("| 2. VIEW CUSTOMER   |");
+                System.out.println("| 3. UPDATE CUSTOMER |");
+                System.out.println("| 4. DELETE CUSTOMER |");
+                System.out.println("| 5. EXIT            |");
+                System.out.println("|--------------------|");
 
-            System.out.print("Choose from 1-5: ");
-            int action = sc.nextInt();
+                int action = -1;  // Initialize with an invalid action
+                boolean validInput = false;
 
-            while (action < 1 || action > 5) {
-                System.out.print("\tInvalid action. Please enter a number between 1 and 5: ");
-                action = sc.nextInt();
+    
+        while (!validInput) {
+          System.out.print("Choose from 1-5: ");
+        if (sc.hasNextInt()) {
+            action = sc.nextInt();
+            if (action >= 1 && action <= 5) {
+                validInput = true;
+            } else {
+                System.out.println("\tInvalid action. Please enter a number between 1 and 4.");
             }
-
-            switch (action) {
+        } else {
+            System.out.println("\tInvalid input. Please enter a number.");
+            sc.next(); // Clear the invalid input
+        }
+        switch (action) {
                 case 1:
                     addCustomer(sc);
                     break;
@@ -39,13 +51,20 @@ public class Customer {
                 case 4:
                     deleteCustomer(sc);
                     break;
-            }
-
+                case 5:
+                    System.out.println("Thanks!! UWU -_-");
+                    return;
+            }  
+    }
             System.out.print("\nDo you still want to use Customer menu? (Y/N): ");
-            ch = sc.next();
-        } while (ch.equalsIgnoreCase("Y"));
-
-        System.out.println("\nThank you for using this application");
+            another = in.next().trim();
+            
+            while(!another.equals("Yes")&&!another.equals("yes")&&!another.equals("YES")&&!another.equals("y")&&!another.equals("Y")&&!another.equals("n")&&!another.equals("N")&&!another.equals("No")&&!another.equals("NO")&&!another.equals("no")){
+                System.out.print("Number is not Allowed! Please Try again (Y/N):");
+                another=in.next().trim();
+        }
+            }while (another.equals("YES")||another.equals("yes")||another.equals("Yes")||another.equals("y")||another.equals("Y"));
+                System.out.println("Thamkyou for using Customer Application");
     }
 
     public void addCustomer(Scanner sc) {

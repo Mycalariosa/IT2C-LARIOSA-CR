@@ -5,10 +5,11 @@ import java.text.DecimalFormat;
 import java.util.Scanner;
 
 public class ClothingItem {
-
+        
     public void clothingTransaction(Scanner sc) {
-        String ch;
-
+        String ch=null;
+        Scanner in = new Scanner (System.in);
+        String another =null;
         do {
             System.out.println("\n|------------------|");
             System.out.println("|  CLOTHING ITEM   |");
@@ -17,14 +18,26 @@ public class ClothingItem {
             System.out.println("| 2. VIEW ITEMS    |");
             System.out.println("| 3. UPDATE ITEM   |");
             System.out.println("| 4. DELETE ITEM   |");
+            System.out.println("| 5. EXIT          |");
             System.out.println("|------------------|");
 
-            System.out.print("Choose from 1-5: ");
-            int action = sc.nextInt();
+          int action = -1;  // Initialize with an invalid action
+            boolean validInput = false;
 
-            while (action < 1 || action > 5) {
-                System.out.print("\tInvalid action. Please enter a number between 1 and 5: ");
-                action = sc.nextInt();
+            // Loop until a valid integer between 1 and 5 is entered
+            while (!validInput) {
+                System.out.print("Choose from 1-5: ");
+                if (sc.hasNextInt()) {
+                    action = sc.nextInt();
+                    if (action >= 1 && action <= 5) {
+                        validInput = true;
+                    } else {
+                        System.out.println("\nInvalid action. Please enter a number between 1 and 5.");
+                    }
+                } else {
+                    System.out.println("\nInvalid input. Please enter a number.");
+                    sc.next(); // Clear the invalid input
+                }
             }
 
             switch (action) {
@@ -40,13 +53,20 @@ public class ClothingItem {
                 case 4:
                     deleteClothingItem(sc);
                     break;
+                case 5:
+                    System.out.println("Thanks! UWU -_-");
+                    return;
             }
 
             System.out.print("\nDo you still want to use Clothing Item menu? (Y/N): ");
-            ch = sc.next();
-        } while (ch.equalsIgnoreCase("Y"));
-
-        System.out.println("\nThank you for using the Clothing Item application");
+            another = in.next().trim();
+            
+            while(!another.equals("Yes")&&!another.equals("yes")&&!another.equals("YES")&&!another.equals("y")&&!another.equals("Y")&&!another.equals("n")&&!another.equals("N")&&!another.equals("No")&&!another.equals("NO")&&!another.equals("no")){
+                System.out.println("Enter again:");
+                another=in.next().trim();
+        }
+            }while (another.equals("YES")||another.equals("yes")||another.equals("Yes")||another.equals("y")||another.equals("Y"));
+                System.out.println("Thamkyou for using Clothing item Application");
     }
 
     public void addClothingItem(Scanner sc) {
