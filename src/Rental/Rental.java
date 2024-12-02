@@ -412,8 +412,7 @@ public void ReturnRental(Scanner sc) {
     conf.viewRecords(query, headers, columns);
 }
 
-
- public void indivRentalReport() {
+public void indivRentalReport() {
     Scanner sc = new Scanner(System.in);
     CONFIG conf = new CONFIG();
     boolean validId = false;
@@ -450,6 +449,7 @@ public void ReturnRental(Scanner sc) {
 
     try (Connection con = CONFIG.connectDB();
          PreparedStatement pst = con.prepareStatement(query)) {
+
         pst.setInt(1, rentalId);
         ResultSet rs = pst.executeQuery();
 
@@ -493,44 +493,8 @@ public void ReturnRental(Scanner sc) {
             System.out.printf("%-30s: PHP %-30.2f%n", "Total Payments Made", payment - change + damageCharge + lateReturnCharge);
             System.out.println("***************************************************************************");
 
-            // Fetch individual transaction history for the customer
-            String historyQuery = "SELECT r.rental_id, ci.c_name, r.r_status, r.rental_start_date, r.rental_end_date "
-                                + "FROM Rental r "
-                                + "JOIN ClothingItem ci ON r.clothing_item_id = ci.clothing_ID "
-                                + "WHERE r.customer_id = ?";
-
-            try (PreparedStatement historyPst = con.prepareStatement(historyQuery)) {
-                historyPst.setString(1, customerId);
-                ResultSet historyRs = historyPst.executeQuery();
-
-                System.out.println("\n***************************************************************************");
-                System.out.println("                      CUSTOMER TRANSACTION HISTORY                         ");
-                System.out.println("***************************************************************************");
-                System.out.printf("| %-10s | %-25s | %-15s | %-15s | %-15s |\n", 
-                                  "Rental ID", "Clothing Name", "Status", "Start Date", "End Date");
-                System.out.println("---------------------------------------------------------------------------");
-
-                int itemCount = 0;
-
-                while (historyRs.next()) {
-                    itemCount++;
-                    int histRentalId = historyRs.getInt("rental_id");
-                    String histClothingName = historyRs.getString("c_name");
-                    String histStatus = historyRs.getString("r_status").equalsIgnoreCase("R") ? "Rented" : "Returned";
-                    String histStartDate = historyRs.getString("rental_start_date");
-                    String histEndDate = historyRs.getString("rental_end_date");
-
-                    System.out.printf("| %-10d | %-25s | %-15s | %-15s | %-15s |\n",
-                            histRentalId, histClothingName, histStatus, histStartDate, histEndDate);
-                }
-
-                if (itemCount == 0) {
-                    System.out.println("No transaction history found for this customer.");
-                } else {
-                    System.out.printf("\nTotal Items Borrowed: %d\n", itemCount);
-                }
-                System.out.println("***************************************************************************");
-            }
+            // Fetch and display customer transaction history
+            displayCustomerTransactionHistory(customerId);
         } else {
             System.out.println("No rental report found for the given Rental ID.");
         }
@@ -540,7 +504,50 @@ public void ReturnRental(Scanner sc) {
     }
 }
 
+// Method to display the customer's transaction history
+private void displayCustomerTransactionHistory(String customerId) {
+    CONFIG conf = new CONFIG();
+    String query = "SELECT r.rental_id, ci.c_name, r.rental_start_date, r.rental_end_date, r.num_days, r.r_price, r.total_price, r.r_status "
+                 + "FROM Rental r "
+                 + "JOIN ClothingItem ci ON r.clothing_item_id = ci.clothing_ID "
+                 + "WHERE r.customer_id = ? "
+                 + "ORDER BY r.rental_start_date DESC"; // Order by most recent rental
 
+    try (Connection con = conf.connectDB();
+         PreparedStatement pst = con.prepareStatement(query)) {
+
+        pst.setString(1, customerId);
+        ResultSet rs = pst.executeQuery();
+
+        int transactionCount = 0;
+        System.out.println("\n***************************************************************************");
+        System.out.println("                          CUSTOMER TRANSACTION HISTORY                      ");
+        System.out.println("***************************************************************************");
+        System.out.printf("| %-10s | %-30s | %-15s | %-15s | %-15s | %-15s |\n", "Rental ID", "Clothing Item", "Start Date", "End Date", "Days", "Total Price");
+        System.out.println("---------------------------------------------------------------------------");
+
+        while (rs.next()) {
+            int rentalId = rs.getInt("rental_id");
+            String clothingItem = rs.getString("c_name");
+            String startDate = rs.getString("rental_start_date");
+            String endDate = rs.getString("rental_end_date");
+            int numDays = rs.getInt("num_days");
+            double totalPrice = rs.getDouble("total_price");
+            String status = rs.getString("r_status");
+
+            // Print each transaction
+            System.out.printf("| %-10d | %-30s | %-15s | %-15s | %-15d | PHP %-15.2f |\n", rentalId, clothingItem, startDate, endDate, numDays, totalPrice);
+            transactionCount++;
+        }
+
+        System.out.println("---------------------------------------------------------------------------");
+        System.out.printf("Total number of transactions: %d\n", transactionCount);
+        System.out.println("***************************************************************************");
+
+    } catch (SQLException e) {
+        System.out.println("Error retrieving customer transaction history: " + e.getMessage());
+    }
+}
 
 
    private void updateRental(Scanner sc) {
