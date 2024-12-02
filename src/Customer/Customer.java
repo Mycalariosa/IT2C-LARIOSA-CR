@@ -111,40 +111,94 @@ public class Customer {
         con.viewRecords(lariosaQuery, lariosaHeaders, lariosaColumns);
     }
 
-    private void updateCustomer(Scanner sc) {
-        viewCustomer();
+   private void updateCustomer(Scanner sc) {
+    // First, display all customers (to make sure user knows the customer IDs)
+    viewCustomer();
 
-        System.out.print("Enter Customer ID: ");
-        int id = sc.nextInt();
+    System.out.print("Enter Customer ID you want to update: ");
+    int id = sc.nextInt();
 
-        System.out.print("Enter First Name: ");
-        String fname = sc.next();
+    boolean validId = false;
+    // Validate if customer ID exists
+    CONFIG conf = new CONFIG();
+    String queryExistence = "SELECT COUNT(1) FROM Customer WHERE c_id=?";
+    int exists = conf.checkExistence(queryExistence, id);
 
-        System.out.print("Enter Last Name: ");
-        String lname = sc.next();
-
-        System.out.print("Enter Email: ");
-        String email = sc.next();
-
-        String contact = "";
-        while (true) {
-            System.out.print("Enter Contact Number: ");
-            contact = sc.next();
-
-            if (contact.matches("\\d{11}")) {   
-                break;
-            } else {
-                System.out.println("Invalid contact number. Please enter exactly 11 digits.");
-            }
-        }
-
-        System.out.print("Enter Address: ");
-        String address = sc.next();
-
-        String qry = "UPDATE Customer SET c_fname=?, c_lname=?, c_email=?, c_contact=?, c_address=? WHERE c_id = ?";
-        CONFIG con = new CONFIG();
-        con.updateRecord(qry, fname, lname, email, contact, address, id);
+    if (exists == 0) {
+        System.out.println("\tERROR: Customer ID doesn't exist.");
+        return; // Exit if customer doesn't exist
     }
+
+    System.out.println("Customer ID " + id + " exists. What would you like to update?");
+    boolean updateComplete = false;
+    while (!updateComplete) {
+        // Display a menu for the fields that can be updated
+        System.out.println("\nWhich field would you like to update?");
+        System.out.println("1. First Name");
+        System.out.println("2. Last Name");
+        System.out.println("3. Email");
+        System.out.println("4. Contact Number");
+        System.out.println("5. Address");
+        System.out.println("6. Exit Update Process");
+        System.out.print("Select an option (1-6): ");
+        
+        int choice = sc.nextInt();
+        
+        switch (choice) {
+            case 1:
+                System.out.print("Enter New First Name: ");
+                String fname = sc.next();
+                String query1 = "UPDATE Customer SET c_fname=? WHERE c_id=?";
+                conf.updateRecord(query1, fname, id);
+                System.out.println("First Name updated successfully.");
+                break;
+            case 2:
+                System.out.print("Enter New Last Name: ");
+                String lname = sc.next();
+                String query2 = "UPDATE Customer SET c_lname=? WHERE c_id=?";
+                conf.updateRecord(query2, lname, id);
+                System.out.println("Last Name updated successfully.");
+                break;
+            case 3:
+                System.out.print("Enter New Email: ");
+                String email = sc.next();
+                String query3 = "UPDATE Customer SET c_email=? WHERE c_id=?";
+                conf.updateRecord(query3, email, id);
+                System.out.println("Email updated successfully.");
+                break;
+            case 4:
+                String contact = "";
+                while (true) {
+                    System.out.print("Enter New Contact Number: ");
+                    contact = sc.next();
+
+                    if (contact.matches("\\d{11}")) {
+                        break;
+                    } else {
+                        System.out.println("Invalid contact number. Please enter exactly 11 digits.");
+                    }
+                }
+                String query4 = "UPDATE Customer SET c_contact=? WHERE c_id=?";
+                conf.updateRecord(query4, contact, id);
+                System.out.println("Contact Number updated successfully.");
+                break;
+            case 5:
+                System.out.print("Enter New Address: ");
+                String address = sc.next();
+                String query5 = "UPDATE Customer SET c_address=? WHERE c_id=?";
+                conf.updateRecord(query5, address, id);
+                System.out.println("Address updated successfully.");
+                break;
+            case 6:
+                System.out.println("Exiting update process.");
+                updateComplete = true;
+                break;
+            default:
+                System.out.println("Invalid choice. Please select a valid option.");
+                break;
+        }
+    }
+}
 
     private void deleteCustomer(Scanner sc) {
         viewCustomer();
