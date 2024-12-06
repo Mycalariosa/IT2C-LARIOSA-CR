@@ -11,6 +11,7 @@ import java.time.temporal.ChronoUnit;
 import ClothingItem.ClothingItem;
 import java.sql.Date;
 
+
 public class Rental {
 
     public void rentalTransaction() {
@@ -83,7 +84,8 @@ public class Rental {
                 System.out.println("Thamkyou for using Rental Application");
     }
 
- public void addRental(Scanner sc) {
+
+public void addRental(Scanner sc) {
     CONFIG conf = new CONFIG();
     ClothingItem clothingItem = new ClothingItem();
 
@@ -102,46 +104,84 @@ public class Rental {
     int customerId;
     while (true) {
         System.out.print("Customer ID: ");
-        customerId = sc.nextInt();
+        // Check if input is a valid integer
+        if (sc.hasNextInt()) {
+            customerId = sc.nextInt();
+            String query = "SELECT COUNT(1) FROM Customer WHERE c_id=?";
+            int exists = conf.checkExistence(query, customerId);
 
-        String query = "SELECT COUNT(1) FROM Customer WHERE c_id=?";
-        int exists = conf.checkExistence(query, customerId);
-
-        if (exists > 0) {
-            break;
+            if (exists > 0) {
+                break;
+            } else {
+                System.out.println("Invalid Customer ID. Please enter an existing one.");
+            }
         } else {
-            System.out.println("Invalid Customer ID. Please enter an existing one.");
+            System.out.println("Invalid input. Please enter a valid numeric Customer ID.");
+            sc.next(); // Clear the invalid input
         }
     }
 
     int clothingItemId;
     while (true) {
         System.out.print("Enter Clothing Item ID to rent: ");
-        clothingItemId = sc.nextInt();
+        // Check if input is a valid integer
+        if (sc.hasNextInt()) {
+            clothingItemId = sc.nextInt();
+            // Check if the item is available
+            String availabilityQuery = "SELECT c_availability FROM ClothingItem WHERE clothing_ID = ?";
+            String currentAvailability = conf.getRecord(availabilityQuery, clothingItemId);
 
-        // Check if the item is available
-        String availabilityQuery = "SELECT c_availability FROM ClothingItem WHERE clothing_ID = ?";
-        String currentAvailability = conf.getRecord(availabilityQuery, clothingItemId);
-
-        if (currentAvailability != null && currentAvailability.equalsIgnoreCase("available")) {
-            // Proceed with rental process
-            break;
+            if (currentAvailability != null && currentAvailability.equalsIgnoreCase("available")) {
+                // Proceed with rental process
+                break;
+            } else {
+                System.out.println("Clothing item is not available for rent. Please try another item.");
+            }
         } else {
-            System.out.println("Clothing item is not available for rent. Please try another item.");
+            System.out.println("Invalid input. Please enter a valid numeric Clothing Item ID.");
+            sc.next(); // Clear the invalid input
         }
     }
 
-    sc.nextLine(); 
+    sc.nextLine(); // Consume the newline left by nextInt
     System.out.print("------------------------------------\n");
 
-    System.out.print("Rental Start Date (YYYY-MM-DD): ");
-    String startDateStr = sc.next();
+    LocalDate startDate = null;
+    LocalDate endDate = null;
 
-    System.out.print("Rental End Date (YYYY-MM-DD): ");
-    String endDateStr = sc.next();
+    // Validate start and end dates
+    while (startDate == null || endDate == null) {
+        System.out.print("Rental Start Date (YYYY-MM-DD): ");
+        String startDateStr = sc.next();
 
-    LocalDate startDate = LocalDate.parse(startDateStr);
-    LocalDate endDate = LocalDate.parse(endDateStr);
+        try {
+            startDate = LocalDate.parse(startDateStr);
+            // Check if the start date is today or a future date
+            if (startDate.isBefore(LocalDate.now())) {
+                System.out.println("Start date cannot be in the past. Please enter a valid start date.");
+                startDate = null;
+                continue;
+            }
+        } catch (Exception e) {
+            System.out.println("Invalid date format. Please enter the start date in YYYY-MM-DD format.");
+            continue;
+        }
+
+        System.out.print("Rental End Date (YYYY-MM-DD): ");
+        String endDateStr = sc.next();
+
+        try {
+            endDate = LocalDate.parse(endDateStr);
+            // Check if the end date is after the start date
+            if (endDate.isBefore(startDate)) {
+                System.out.println("End date cannot be before the start date. Please enter a valid end date.");
+                endDate = null;
+            }
+        } catch (Exception e) {
+            System.out.println("Invalid date format. Please enter the end date in YYYY-MM-DD format.");
+        }
+    }
+
     System.out.print("------------------------------------\n");
 
     long numDays = ChronoUnit.DAYS.between(startDate, endDate);
@@ -170,7 +210,7 @@ public class Rental {
 
     // Insert rental record into the database with r_status as "rented"
     String sql = "INSERT INTO Rental (customer_id, clothing_item_id, rental_start_date, rental_end_date, num_days, r_price, total_price, payment, change, r_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    conf.addRecord(sql, customerId, clothingItemId, startDateStr, endDateStr, numDays, dailyPrice, totalPrice, payment, change, "rented");
+    conf.addRecord(sql, customerId, clothingItemId, startDate.toString(), endDate.toString(), numDays, dailyPrice, totalPrice, payment, change, "rented");
 
     // Update clothing item availability to "unavailable"
     String updateAvailabilitySql = "UPDATE ClothingItem SET c_availability='unavailable' WHERE clothing_ID=?";
@@ -538,16 +578,15 @@ public void indivRentalReport() {
             double lateReturnCharge = rs.getDouble("late_return_charge");
             double change = rs.getDouble("change");
 
-            // Calculate the total payments made
+          
             double totalPayments = payment - change + damageCharge + lateReturnCharge;
 
-            // Calculate total rental days including late return days
-            // Assuming that the late return charge corresponds to the late return days, for example:
-            int lateReturnDays = (lateReturnCharge > 0) ? (int) (lateReturnCharge / rentalFee) : 0; // Calculate late days based on charge
+            
+            int lateReturnDays = (lateReturnCharge > 0) ? (int) (lateReturnCharge / rentalFee) : 0; 
 
-            int totalRentalDays = rentalDays + lateReturnDays; // Add late days to rental days
-
-            // Print the rental report
+            int totalRentalDays = rentalDays + lateReturnDays; 
+            
+            
             System.out.println("\n***************************************************************************");
             System.out.println("                          RENTAL REPORT STATEMENT                          ");
             System.out.println("***************************************************************************");
@@ -615,7 +654,7 @@ private void displayCustomerTransactionHistory(String customerId, double totalPa
             double lateReturnCharge = rs.getDouble("late_return_charge");
 
             // Calculate late return days based on late return charge
-            int lateReturnDays = (lateReturnCharge > 0) ? (int) (lateReturnCharge / totalPrice) : 0; // Assuming totalPrice is rental fee for this calculation
+            int lateReturnDays = (lateReturnCharge > 0) ? (int) (lateReturnCharge / totalPrice) : 0;
             int totalRentalDays = numDays + lateReturnDays; // Add late days to rental days
 
             // Calculate the total payments for the current rental transaction
@@ -830,78 +869,52 @@ private void deleteRental(Scanner sc) {
 
         System.out.println("|----------------------------------------------------------------------------------------------------------|");
 
-    } catch (SQLException e) {
-        System.out.println("" + e.getMessage());
-        return;
-    }
+        // Ask user to enter the rental ID they want to delete
+        System.out.print("Enter Rental ID to delete (or type 0 to cancel): ");
+        int rentalIdToDelete = sc.nextInt();
 
-    
-    boolean validId = false;
-    int rentalId = 0;
-
-    do {
-        System.out.print("Enter Rental ID to delete: ");
-        rentalId = sc.nextInt();
-
-        // Check if the rental ID exists and is active (rented)
-        String queryExistence = "SELECT COUNT(1) FROM Rental WHERE rental_id=? AND r_status='rented'";
-        int exists = conf.checkExistence(queryExistence, rentalId);
-
-        if (exists == 0) {
-            System.out.println("\tERROR: Rental ID doesn't exist or is not currently rented.");
-            System.out.print("Would you like to try again? (Y/N): ");
-            String retry = sc.next();
-            if (!retry.equalsIgnoreCase("Y")) {
-                System.out.println("Exiting deletion process.");
-                return;
-            }
-        } else {
-            validId = true;
+        if (rentalIdToDelete == 0) {
+            System.out.println("Deletion process canceled.");
+            return;
         }
-    } while (!validId);
 
-    // Check if the rental is active (still rented out)
-    if (isRentalActive(rentalId)) {
-        System.out.println("Sorry, you cannot delete any rental that is still active.");
-        return;  // Cancel deletion if the rental is active
-    }
+        // Check if the rental ID is rented
+        String checkStatusQuery = "SELECT r_status FROM Rental WHERE rental_id = ?";
+        try (PreparedStatement checkStmt = con.prepareStatement(checkStatusQuery)) {
+            checkStmt.setInt(1, rentalIdToDelete);
+            ResultSet statusResult = checkStmt.executeQuery();
 
-    System.out.print("Are you sure you want to delete this rental? (yes/no): ");
-    String confirmation = sc.next().toLowerCase();
+            if (statusResult.next()) {
+                String rentalStatus = statusResult.getString("r_status");
 
-    if (!confirmation.equals("yes")) {
-        System.out.println("Deletion cancelled.");
-        return;
-    }
+                if ("rented".equals(rentalStatus)) {
+                    System.out.println("Error: The rental is currently rented and cannot be deleted.");
+                } else {
+                    // Proceed with deletion if rental is not 'rented'
+                    String deleteQuery = "DELETE FROM Rental WHERE rental_id = ?";
+                    try (PreparedStatement deleteStmt = con.prepareStatement(deleteQuery)) {
+                        deleteStmt.setInt(1, rentalIdToDelete);
+                        int rowsAffected = deleteStmt.executeUpdate();
 
-    try {
-        // Retrieve the clothing item ID associated with this rental
-        String getClothingItemIdQuery = "SELECT clothing_item_id FROM Rental WHERE rental_id=?";
-        int clothingItemId = conf.getSingleIntResult(getClothingItemIdQuery, rentalId);
-
-        // Delete the rental record
-        String sqlDelete = "DELETE FROM Rental WHERE rental_id=?";
-        boolean isDeleted = conf.deleteRecord(sqlDelete, rentalId);
-
-        if (isDeleted) {
-            // Check if there are any other active rentals for this clothing item
-            String checkRentalQuery = "SELECT COUNT(1) FROM Rental WHERE clothing_item_id = ? AND rental_end_date >= CURDATE()";
-            int rentedCount = conf.checkExistence(checkRentalQuery, clothingItemId);
-
-            if (rentedCount == 0) {
-                // If no active rentals, update availability of the clothing item
-                String updateAvailabilitySql = "UPDATE ClothingItem SET c_availability='available' WHERE clothing_ID=?";
-                conf.updateRecord(updateAvailabilitySql, clothingItemId);
-                System.out.println("Rental deleted successfully and item marked as available.");
+                        if (rowsAffected > 0) {
+                            System.out.println("Rental ID " + rentalIdToDelete + " has been successfully deleted.");
+                        } else {
+                            System.out.println("Error: Rental ID not found or could not be deleted.");
+                        }
+                    } catch (SQLException e) {
+                        System.out.println("Error while deleting rental: " + e.getMessage());
+                    }
+                }
             } else {
-                System.out.println("Rental deleted successfully.");
+                System.out.println("Error: Rental ID not found.");
             }
-        } else {
-            System.out.println("Rental not found or could not be deleted.");
+
+        } catch (SQLException e) {
+            System.out.println("Error checking rental status: " + e.getMessage());
         }
-    } catch (Exception e) {
-        // Provide more specific error handling
-        System.out.println("Error deleting rental: " + e.getMessage());
+
+    } catch (SQLException e) {
+        System.out.println("Error retrieving active rentals: " + e.getMessage());
     }
 }
 
