@@ -9,6 +9,7 @@ import java.util.Scanner;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import ClothingItem.ClothingItem;
+import java.sql.Date;
 
 public class Rental {
 
@@ -82,7 +83,7 @@ public class Rental {
                 System.out.println("Thamkyou for using Rental Application");
     }
 
-  public void addRental(Scanner sc) {
+ public void addRental(Scanner sc) {
     CONFIG conf = new CONFIG();
     ClothingItem clothingItem = new ClothingItem();
 
@@ -167,14 +168,17 @@ public class Rental {
     double change = payment - totalPrice;
     System.out.printf("Change: %.2f\n", change);
 
-    String sql = "INSERT INTO Rental (customer_id, clothing_item_id, rental_start_date, rental_end_date, num_days, r_price, total_price, payment, change) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    conf.addRecord(sql, customerId, clothingItemId, startDateStr, endDateStr, numDays, dailyPrice, totalPrice, payment, change);
+    // Insert rental record into the database with r_status as "rented"
+    String sql = "INSERT INTO Rental (customer_id, clothing_item_id, rental_start_date, rental_end_date, num_days, r_price, total_price, payment, change, r_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    conf.addRecord(sql, customerId, clothingItemId, startDateStr, endDateStr, numDays, dailyPrice, totalPrice, payment, change, "rented");
 
+    // Update clothing item availability to "unavailable"
     String updateAvailabilitySql = "UPDATE ClothingItem SET c_availability='unavailable' WHERE clothing_ID=?";
     conf.updateRecord(updateAvailabilitySql, clothingItemId);
 
     System.out.println("Rental added successfully and item marked as unavailable.");
-} 
+}
+
 
    private void viewRentals() {
     CONFIG con = new CONFIG();
@@ -265,10 +269,10 @@ public class Rental {
 
 public void ReturnRental(Scanner sc) {
     CONFIG conf = new CONFIG();
-    ClothingItem clothingItem = new ClothingItem(); // Assuming ClothingItem class exists
 
-    System.out.println("\n---------------------------- Current Rented Items ----------------------------");
-    displayRentedItems(); // Display all rented items before prompting
+    // Display active rentals before prompting for return
+    System.out.println("\n---------------------------- Current Active Rentals ----------------------------");
+    displayActiveRentals(); // Display only active rentals
 
     int rentalId;
     boolean validId = false;
@@ -277,12 +281,12 @@ public void ReturnRental(Scanner sc) {
         System.out.print("Enter Rental ID you want to return: ");
         rentalId = sc.nextInt();
 
-        // Validate if the rental ID exists
-        String queryExistence = "SELECT COUNT(1) FROM Rental WHERE rental_id=?";
+        // Validate if the rental ID exists and is active
+        String queryExistence = "SELECT COUNT(1) FROM Rental WHERE rental_id=? AND r_status='rented'";
         int exists = conf.checkExistence(queryExistence, rentalId);
 
         if (exists == 0) {
-            System.out.println("\tERROR: Rental ID doesn't exist.");
+            System.out.println("\tERROR: Rental ID doesn't exist or is not active.");
             System.out.print("Would you like to try again? (Y/N): ");
             String retry = sc.next();
             if (!retry.equalsIgnoreCase("Y")) {
@@ -290,10 +294,11 @@ public void ReturnRental(Scanner sc) {
                 return;
             }
         } else {
-            validId = true; // ID is valid, exit the loop
+            validId = true; // ID is valid and active, exit the loop
         }
     } while (!validId);
 
+    // Continue with the return process (rest of your code for return logic)
     String getEndDateQuery = "SELECT rental_end_date, r_price FROM Rental WHERE rental_id=?";
     LocalDate rentalEndDate;
     double dailyRate;
@@ -324,11 +329,11 @@ public void ReturnRental(Scanner sc) {
 
     int damageFee = 0;
     if (todayDate.isAfter(rentalEndDate)) {
-    long lateDays = ChronoUnit.DAYS.between(rentalEndDate, todayDate);
-    lateFee = lateDays * (dailyRate + 200); // Modified calculation: daily rate plus 200 pesos per day
-    System.out.printf("Late return fee for %d day(s): PHP %.2f%n", lateDays, lateFee);
-    damageFee += lateFee;
-}
+        long lateDays = ChronoUnit.DAYS.between(rentalEndDate, todayDate);
+        lateFee = lateDays * (dailyRate + 200); // Modified calculation: daily rate plus 200 pesos per day
+        System.out.printf("Late return fee for %d day(s): PHP %.2f%n", lateDays, lateFee);
+        damageFee += lateFee;
+    }
 
     System.out.println("\n---------------------------------------");
     System.out.println("|       Damage Type       |   Charge   |");
@@ -392,6 +397,56 @@ public void ReturnRental(Scanner sc) {
         System.out.println("Payment canceled. Rental return not completed.");
     }
 }
+
+// Method to display active rentals
+private void displayActiveRentals() {
+    String activeRentalsQuery = "SELECT r.rental_id, c.c_lname, c.c_fname, ci.c_name, r.r_status, " +
+                                "r.rental_start_date, r.rental_end_date " +
+                                "FROM Rental r " +
+                                "JOIN Customer c ON r.customer_id = c.c_ID " +
+                                "JOIN ClothingItem ci ON r.clothing_item_id = ci.Clothing_ID " +
+                                "WHERE r.r_status = 'rented'";  // Only rented rentals are shown
+
+    String[] headers = {"Rental ID", "Customer Name", "Clothing Name", "Status", "Start Date", "End Date"};
+
+    try (Connection con = CONFIG.connectDB();
+         PreparedStatement pst = con.prepareStatement(activeRentalsQuery);
+         ResultSet rs = pst.executeQuery()) {
+
+        // Check if result set is empty
+        if (!rs.isBeforeFirst()) {
+            System.out.println("No active rental records found.");
+            return;
+        }
+
+        // Print table headers
+        System.out.println("|----------------------------------------------------------------------------------------------------------|");
+        System.out.println("|                                         ACTIVE RENTALS                                                   |");
+        System.out.println("|----------------------------------------------------------------------------------------------------------|");
+        System.out.printf("| %-10s | %-25s | %-20s | %-10s | %-12s | %-12s |%n",
+                (Object[]) headers);
+        System.out.println("|----------------------------------------------------------------------------------------------------------|");
+
+        // Iterate through and display records
+        while (rs.next()) {
+            int rentalId = rs.getInt("rental_id");
+            String customerName = rs.getString("c_lname") + ", " + rs.getString("c_fname");
+            String clothingName = rs.getString("c_name");
+            String status = rs.getString("r_status");
+            String startDate = rs.getString("rental_start_date");
+            String endDate = rs.getString("rental_end_date");
+
+            System.out.printf("| %-10d | %-25s | %-20s | %-10s | %-12s | %-12s |%n",
+                    rentalId, customerName, clothingName, status, startDate, endDate);
+        }
+
+        System.out.println("|----------------------------------------------------------------------------------------------------------|");
+
+    } catch (SQLException e) {
+        System.out.println("Error retrieving active rentals: " + e.getMessage());
+    }
+}
+
 
 
     private void displayCustomerDetails() {
@@ -472,6 +527,15 @@ public void indivRentalReport() {
             double lateReturnCharge = rs.getDouble("late_return_charge");
             double change = rs.getDouble("change");
 
+            // Calculate the total payments made
+            double totalPayments = payment - change + damageCharge + lateReturnCharge;
+
+            // Calculate total rental days including late return days
+            // Assuming that the late return charge corresponds to the late return days, for example:
+            int lateReturnDays = (lateReturnCharge > 0) ? (int) (lateReturnCharge / rentalFee) : 0; // Calculate late days based on charge
+
+            int totalRentalDays = rentalDays + lateReturnDays; // Add late days to rental days
+
             // Print the rental report
             System.out.println("\n***************************************************************************");
             System.out.println("                          RENTAL REPORT STATEMENT                          ");
@@ -484,17 +548,17 @@ public void indivRentalReport() {
             System.out.printf("%-30s: %-30s%n", "Clothing Item", clothingName);
             System.out.printf("%-30s: %-30s%n", "Rental Start Date", rentalStartDate);
             System.out.printf("%-30s: %-30s%n", "Rental End Date", rentalEndDate);
-            System.out.println("---------------------------------------------------------------------------");
+            System.out.println("--------------------------------------------------------------------------");
             System.out.printf("%-30s: PHP %-30.2f%n", "Rental Fee per Day", rentalFee);
-            System.out.printf("%-30s: %-1ddays%n", "Number of Rental Days", rentalDays);
+            System.out.printf("%-30s: %-1ddays%n", "Number of Rental Days", totalRentalDays); // Updated rental days
             System.out.printf("%-30s: PHP %-30.2f%n", "Total Amount Due", totalAmount);
             System.out.printf("%-30s: PHP %-30.2f%n", "Total Charge for Damages", damageCharge);
             System.out.printf("%-30s: PHP %-30.2f%n", "Charge for Late Return", lateReturnCharge);
-            System.out.printf("%-30s: PHP %-30.2f%n", "Total Payments Made", payment - change + damageCharge + lateReturnCharge);
+            System.out.printf("%-30s: PHP %-30.2f%n", "Total Payments Made", totalPayments);
             System.out.println("***************************************************************************");
 
             // Fetch and display customer transaction history
-            displayCustomerTransactionHistory(customerId);
+            displayCustomerTransactionHistory(customerId, totalPayments);
         } else {
             System.out.println("No rental report found for the given Rental ID.");
         }
@@ -503,11 +567,9 @@ public void indivRentalReport() {
         System.out.println("Error retrieving rental report: " + e.getMessage());
     }
 }
-
-// Method to display the customer's transaction history
-private void displayCustomerTransactionHistory(String customerId) {
+private void displayCustomerTransactionHistory(String customerId, double totalPayments) {
     CONFIG conf = new CONFIG();
-    String query = "SELECT r.rental_id, ci.c_name, r.rental_start_date, r.rental_end_date, r.num_days, r.r_price, r.total_price, r.r_status "
+    String query = "SELECT r.rental_id, ci.c_name, r.rental_start_date, r.rental_end_date, r.num_days, r.r_price, r.total_price, r.r_status, r.payment, r.change, r.damage_charge, r.late_return_charge "
                  + "FROM Rental r "
                  + "JOIN ClothingItem ci ON r.clothing_item_id = ci.clothing_ID "
                  + "WHERE r.customer_id = ? "
@@ -520,11 +582,13 @@ private void displayCustomerTransactionHistory(String customerId) {
         ResultSet rs = pst.executeQuery();
 
         int transactionCount = 0;
-        System.out.println("\n***************************************************************************");
-        System.out.println("                          CUSTOMER TRANSACTION HISTORY                      ");
-        System.out.println("***************************************************************************");
-        System.out.printf("| %-10s | %-30s | %-15s | %-15s | %-15s | %-15s |\n", "Rental ID", "Clothing Item", "Start Date", "End Date", "Days", "Total Price");
-        System.out.println("---------------------------------------------------------------------------");
+        System.out.println("\n* ************************************************************************************************************************************");
+        System.out.println("|                                          CUSTOMER TRANSACTION HISTORY                                                              |");
+        System.out.println("**************************************************************************************************************************************");
+
+        // Adjusted column widths for a more consistent and neat display
+        System.out.printf("| %-10s | %-30s | %-20s | %-20s | %-15s | %-20s |\n", "Rental ID", "Clothing Item", "Start Date", "End Date", "Rental Days", "Total Payments");
+        System.out.println("--------------------------------------------------------------------------------------------------------------------------------------");
 
         while (rs.next()) {
             int rentalId = rs.getInt("rental_id");
@@ -534,15 +598,26 @@ private void displayCustomerTransactionHistory(String customerId) {
             int numDays = rs.getInt("num_days");
             double totalPrice = rs.getDouble("total_price");
             String status = rs.getString("r_status");
+            double payment = rs.getDouble("payment");
+            double change = rs.getDouble("change");
+            double damageCharge = rs.getDouble("damage_charge");
+            double lateReturnCharge = rs.getDouble("late_return_charge");
 
-            // Print each transaction
-            System.out.printf("| %-10d | %-30s | %-15s | %-15s | %-15d | PHP %-15.2f |\n", rentalId, clothingItem, startDate, endDate, numDays, totalPrice);
+            // Calculate late return days based on late return charge
+            int lateReturnDays = (lateReturnCharge > 0) ? (int) (lateReturnCharge / totalPrice) : 0; // Assuming totalPrice is rental fee for this calculation
+            int totalRentalDays = numDays + lateReturnDays; // Add late days to rental days
+
+            // Calculate the total payments for the current rental transaction
+            double totalPaymentsForTransaction = payment - change + damageCharge + lateReturnCharge;
+
+            // Print each transaction with more balanced column widths
+            System.out.printf("| %-10d | %-30s | %-20s | %-20s | %-15d | PHP %-17.2f|\n", rentalId, clothingItem, startDate, endDate, totalRentalDays, totalPaymentsForTransaction);
+            System.out.println("--------------------------------------------------------------------------------------------------------------------------------------");
             transactionCount++;
         }
 
-        System.out.println("---------------------------------------------------------------------------");
-        System.out.printf("Total number of transactions: %d\n", transactionCount);
-        System.out.println("***************************************************************************");
+        // Display transaction count instead of total payments made
+        System.out.printf("\nTotal Transactions: %d%n", transactionCount);
 
     } catch (SQLException e) {
         System.out.println("Error retrieving customer transaction history: " + e.getMessage());
@@ -550,16 +625,17 @@ private void displayCustomerTransactionHistory(String customerId) {
 }
 
 
-   private void updateRental(Scanner sc) {
+
+ private void updateRental(Scanner sc) {
     CONFIG conf = new CONFIG();
 
-    // SQL query to fetch active rentals with detailed information
+    // SQL query to fetch only active ("rented") rentals with detailed information
     String query = "SELECT r.rental_id, c.c_lname, c.c_fname, ci.c_name, r.r_status, " +
                    "r.rental_start_date, r.rental_end_date " +
                    "FROM Rental r " +
                    "JOIN Customer c ON r.customer_id = c.c_ID " +
                    "JOIN ClothingItem ci ON r.clothing_item_id = ci.Clothing_ID " +
-                   "WHERE r.r_status = 'rented'";
+                   "WHERE r.r_status = 'rented'";  // Only rented rentals are shown
 
     // Define headers for the table display
     String[] headers = {"Rental ID", "Customer Name", "Clothing Name", "Status", "Start Date", "End Date"};
@@ -588,14 +664,15 @@ private void displayCustomerTransactionHistory(String customerId) {
             int rentalId = rs.getInt("rental_id");
             String customerName = rs.getString("c_lname") + ", " + rs.getString("c_fname");
             String clothingName = rs.getString("c_name");
-            String status = rs.getString("r_status").equals("rented") ? "Rented" : "Returned";
+            String status = rs.getString("r_status");  // Directly fetch status from the database
             String startDate = rs.getString("rental_start_date");
             String endDate = rs.getString("rental_end_date");
 
             System.out.printf("| %-10d | %-25s | %-20s | %-10s | %-12s | %-12s |%n",
                     rentalId, customerName, clothingName, status, startDate, endDate);
-        System.out.println("|----------------------------------------------------------------------------------------------------------|");
         }
+
+        System.out.println("|----------------------------------------------------------------------------------------------------------|");
 
     } catch (SQLException e) {
         System.out.println("Error retrieving rental records: " + e.getMessage());
@@ -610,7 +687,7 @@ private void displayCustomerTransactionHistory(String customerId) {
         System.out.print("Enter Rental ID to update: ");
         rentalId = sc.nextInt();
 
-        // Validate if the rental ID exists and is active
+        // Validate if the rental ID exists and is active (rented)
         String queryExistence = "SELECT COUNT(1) FROM Rental WHERE rental_id=? AND r_status='rented'";
         int exists = conf.checkExistence(queryExistence, rentalId);
 
@@ -672,7 +749,6 @@ private void displayCustomerTransactionHistory(String customerId) {
             case 5:
                 System.out.print("Enter New Rental Fee per Day: ");
                 double newDailyPrice = sc.nextDouble();
-
                 // Recalculate total price based on the number of days
                 String dateQuery = "SELECT rental_start_date, rental_end_date FROM Rental WHERE rental_id=?";
                 String[] rentalDates = conf.getSingleRecord(dateQuery, rentalId);
@@ -696,10 +772,88 @@ private void displayCustomerTransactionHistory(String customerId) {
     }
 }
 
-   private void deleteRental(Scanner sc) {
+private void deleteRental(Scanner sc) {
+    CONFIG conf = new CONFIG();
 
-    System.out.print("Enter Rental ID to delete: ");
-    int rentalId = sc.nextInt();
+    // SQL query to fetch only active ("rented") rentals with detailed information
+    String query = "SELECT r.rental_id, c.c_lname, c.c_fname, ci.c_name, r.r_status, " +
+                   "r.rental_start_date, r.rental_end_date " +
+                   "FROM Rental r " +
+                   "JOIN Customer c ON r.customer_id = c.c_ID " +
+                   "JOIN ClothingItem ci ON r.clothing_item_id = ci.Clothing_ID " +
+                   "WHERE r.r_status = 'rented'";  // Only rented rentals are shown
+
+    // Define headers for the table display
+    String[] headers = {"Rental ID", "Customer Name", "Clothing Name", "Status", "Start Date", "End Date"};
+
+    // Fetch and display active rentals
+    try (Connection con = CONFIG.connectDB();
+         PreparedStatement pst = con.prepareStatement(query);
+         ResultSet rs = pst.executeQuery()) {
+
+        // Check if result set is empty
+        if (!rs.isBeforeFirst()) {
+            System.out.println("No active rental records found.");
+            return;
+        }
+
+        // Print table headers
+        System.out.println("|----------------------------------------------------------------------------------------------------------|");
+        System.out.println("|                                         ACTIVE RENTALS                                                   |");
+        System.out.println("|----------------------------------------------------------------------------------------------------------|");
+        System.out.printf("| %-10s | %-25s | %-20s | %-10s | %-12s | %-12s |%n", (Object[]) headers);
+        System.out.println("|----------------------------------------------------------------------------------------------------------|");
+
+        // Iterate through and display records
+        while (rs.next()) {
+            int rentalId = rs.getInt("rental_id");
+            String customerName = rs.getString("c_lname") + ", " + rs.getString("c_fname");
+            String clothingName = rs.getString("c_name");
+            String status = rs.getString("r_status");  // Directly fetch status from the database
+            String startDate = rs.getString("rental_start_date");
+            String endDate = rs.getString("rental_end_date");
+
+            System.out.printf("| %-10d | %-25s | %-20s | %-10s | %-12s | %-12s |%n",
+                    rentalId, customerName, clothingName, status, startDate, endDate);
+        }
+
+        System.out.println("|----------------------------------------------------------------------------------------------------------|");
+
+    } catch (SQLException e) {
+        System.out.println("" + e.getMessage());
+        return;
+    }
+
+    
+    boolean validId = false;
+    int rentalId = 0;
+
+    do {
+        System.out.print("Enter Rental ID to delete: ");
+        rentalId = sc.nextInt();
+
+        // Check if the rental ID exists and is active (rented)
+        String queryExistence = "SELECT COUNT(1) FROM Rental WHERE rental_id=? AND r_status='rented'";
+        int exists = conf.checkExistence(queryExistence, rentalId);
+
+        if (exists == 0) {
+            System.out.println("\tERROR: Rental ID doesn't exist or is not currently rented.");
+            System.out.print("Would you like to try again? (Y/N): ");
+            String retry = sc.next();
+            if (!retry.equalsIgnoreCase("Y")) {
+                System.out.println("Exiting deletion process.");
+                return;
+            }
+        } else {
+            validId = true;
+        }
+    } while (!validId);
+
+    // Check if the rental is active (still rented out)
+    if (isRentalActive(rentalId)) {
+        System.out.println("Sorry, you cannot delete any rental that is still active.");
+        return;  // Cancel deletion if the rental is active
+    }
 
     System.out.print("Are you sure you want to delete this rental? (yes/no): ");
     String confirmation = sc.next().toLowerCase();
@@ -708,8 +862,6 @@ private void displayCustomerTransactionHistory(String customerId) {
         System.out.println("Deletion cancelled.");
         return;
     }
-
-    CONFIG conf = new CONFIG();
 
     try {
         // Retrieve the clothing item ID associated with this rental
@@ -740,6 +892,34 @@ private void displayCustomerTransactionHistory(String customerId) {
         // Provide more specific error handling
         System.out.println("Error deleting rental: " + e.getMessage());
     }
+}
+
+// Method to check if the rental is currently active
+private boolean isRentalActive(int rentalId) {
+    String query = "SELECT rental_end_date FROM Rental WHERE rental_id = ?";
+    try (Connection conn = CONFIG.connectDB();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+        pstmt.setInt(1, rentalId);
+        ResultSet rs = pstmt.executeQuery();
+        
+        if (rs.next()) {
+            // Ensure rental_end_date is fetched correctly as a Date
+            java.sql.Date rentalEndDate = rs.getDate("rental_end_date");
+            
+            // Check if rentalEndDate is null or if it is in the future
+            if (rentalEndDate == null) {
+                return true; // If there's no end date, assume the rental is active
+            }
+            
+            java.sql.Date currentDate = new java.sql.Date(System.currentTimeMillis());
+            
+            // If the rental end date is in the future, or if it's null, it's considered active
+            return rentalEndDate.after(currentDate);
+        }
+    } catch (SQLException e) {
+        System.out.println("Error checking rental status: " + e.getMessage());
+    }
+    return false;  // Return false if rental doesn't exist or is not active
 }
 
 

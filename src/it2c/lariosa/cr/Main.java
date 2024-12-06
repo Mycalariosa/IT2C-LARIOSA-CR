@@ -47,7 +47,7 @@ public class Main {
                     case 3:
                         handleRentalTransaction();
                         break;
-                    case 4:
+                    case 4: 
                         System.out.println("\nExiting the application. Thank you for choosing Clothing Rental!");
                         return;
                 }
@@ -65,7 +65,7 @@ public class Main {
     }
     private static void displayMenu() {
         System.out.println("\n|------------------------------------|");
-        System.out.println("|        WELCOME TO CLOTHING RENTAL  |");
+        System.out.println("|      WELCOME TO CLOTHING RENTAL    |");
         System.out.println("|------------------------------------|");
         System.out.println("| 1. Customer Information            |");
         System.out.println("| 2. Clothing Items                  |");

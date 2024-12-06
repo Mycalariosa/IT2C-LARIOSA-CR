@@ -89,11 +89,11 @@ public void viewCustomerList(String query, String[] headers) {
              ResultSet rs = pstmt.executeQuery()) {
 
             // Print headers
-            System.out.println("--------------------------------------------------------------------------------");
+            System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------");
             for (String header : columnHeaders) {
                 System.out.printf("%-20s | ", header);
             }
-            System.out.println("\n--------------------------------------------------------------------------------");
+            System.out.println("\n-----------------------------------------------------------------------------------------------------------------------------------------");
 
             // Print rows
             while (rs.next()) {
@@ -103,7 +103,7 @@ public void viewCustomerList(String query, String[] headers) {
                 }
                 System.out.println();
             }
-            System.out.println("--------------------------------------------------------------------------------");
+            System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------");
 
         } catch (SQLException e) {
             System.out.println("Error retrieving records: " + e.getMessage());
@@ -222,11 +222,11 @@ public String getAvailabilityStatus(int clothingItemId) {
         return status;
     }
 
-public boolean deleteRecord(String sqlQuery, int id) {
-        try (Connection conn = getConnection();
+ public boolean deleteRecord(String sqlQuery, int id) {
+        try (Connection conn = connectDB();
              PreparedStatement stmt = conn.prepareStatement(sqlQuery)) {
             
-            // Set the parameter for the prepared statement (the rental ID)
+            // Set the parameter for the prepared statement (e.g., customer ID)
             stmt.setInt(1, id);
 
             // Execute the delete query
@@ -306,6 +306,11 @@ public ResultSet getRecords(String query, String[] columns) {
     private Connection getConnection() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
+
+    public String[] getSingleRecord(String dateQuery, int rentalId) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+   
 
     private static class connection {
 
