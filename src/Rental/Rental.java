@@ -888,7 +888,7 @@ private void deleteRental(Scanner sc) {
                 String rentalStatus = statusResult.getString("r_status");
 
                 if ("rented".equals(rentalStatus)) {
-                    System.out.println("Error: The rental is currently rented and cannot be deleted.");
+                    System.out.println("The rental is currently rented and cannot be deleted.");
                 } else {
                     // Proceed with deletion if rental is not 'rented'
                     String deleteQuery = "DELETE FROM Rental WHERE rental_id = ?";
