@@ -223,12 +223,23 @@ public class ClothingItem {
     CONFIG conf = new CONFIG();
     DecimalFormat df = new DecimalFormat("#.00");
 
+    // Display all clothing items for reference
     viewClothingItem();
 
-    // Ask for Clothing Item ID
-    System.out.print("Enter Clothing Item ID to update: ");
-    int id = sc.nextInt();
-    sc.nextLine(); // Consume newline character
+    int id = -1;
+
+    // Validate input for Clothing Item ID
+    while (true) {
+        System.out.print("Enter Clothing Item ID to update: ");
+        if (sc.hasNextInt()) {
+            id = sc.nextInt();
+            sc.nextLine(); // Consume newline character
+            break;
+        } else {
+            System.out.println("Invalid input. Please enter a valid numeric Clothing Item ID.");
+            sc.next(); // Clear invalid input
+        }
+    }
 
     // Check if the item exists in the database
     String checkExistenceQuery = "SELECT COUNT(1) FROM ClothingItem WHERE clothing_ID = ?";
@@ -241,7 +252,7 @@ public class ClothingItem {
 
     boolean updateComplete = false;
     while (!updateComplete) {
-        // Ask the user which field they want to update
+        // Display update options
         System.out.println("\nWhich field would you like to update?");
         System.out.println("1. Name");
         System.out.println("2. Brand");
@@ -254,72 +265,68 @@ public class ClothingItem {
         System.out.println("9. Exit Update Process");
         System.out.print("Select an option (1-9): ");
 
+        if (!sc.hasNextInt()) {
+            System.out.println("Invalid choice. Please select a valid option (1-9).");
+            sc.next(); // Clear invalid input
+            continue;
+        }
+
         int choice = sc.nextInt();
         sc.nextLine(); // Consume newline character
 
         switch (choice) {
             case 1: // Update Name
-                String newName;
-                do {
-                    System.out.print("Enter New Name: ");
-                    newName = sc.nextLine().trim();
-                } while (!isValidName(newName)); // Validate name
+                System.out.print("Enter New Name: ");
+                String newName = sc.nextLine().trim();
                 String query1 = "UPDATE ClothingItem SET c_name=? WHERE clothing_ID=?";
                 conf.updateRecord(query1, newName, id);
                 System.out.println("Name updated successfully.");
                 break;
 
             case 2: // Update Brand
-                String newBrand;
-                do {
-                    System.out.print("Enter New Brand: ");
-                    newBrand = sc.nextLine().trim();
-                } while (!isValidBrand(newBrand)); // Validate brand
+                System.out.print("Enter New Brand: ");
+                String newBrand = sc.nextLine().trim();
                 String query2 = "UPDATE ClothingItem SET c_brand=? WHERE clothing_ID=?";
                 conf.updateRecord(query2, newBrand, id);
                 System.out.println("Brand updated successfully.");
                 break;
 
             case 3: // Update Category
-                String newCategory;
-                do {
-                    System.out.print("Enter New Category: ");
-                    newCategory = sc.nextLine().trim();
-                } while (!isValidNameOrCategory(newCategory)); // Validate category
+                System.out.print("Enter New Category: ");
+                String newCategory = sc.nextLine().trim();
                 String query3 = "UPDATE ClothingItem SET c_category=? WHERE clothing_ID=?";
                 conf.updateRecord(query3, newCategory, id);
                 System.out.println("Category updated successfully.");
                 break;
 
             case 4: // Update Size
-                String newSize;
-                do {
-                    System.out.print("Enter New Size (small, medium, large, extra small, extra large): ");
-                    newSize = sc.nextLine().trim().toLowerCase();
-                } while (!isValidSize(newSize)); // Validate size
+                System.out.print("Enter New Size (small, medium, large, extra small, extra large): ");
+                String newSize = sc.nextLine().trim().toLowerCase();
                 String query4 = "UPDATE ClothingItem SET c_size=? WHERE clothing_ID=?";
                 conf.updateRecord(query4, newSize, id);
                 System.out.println("Size updated successfully.");
                 break;
 
             case 5: // Update Color
-                String newColor;
-                do {
-                    System.out.print("Enter New Color: ");
-                    newColor = sc.nextLine().trim();
-                } while (!isValidColor(newColor)); // Validate color
+                System.out.print("Enter New Color: ");
+                String newColor = sc.nextLine().trim();
                 String query5 = "UPDATE ClothingItem SET c_color=? WHERE clothing_ID=?";
                 conf.updateRecord(query5, newColor, id);
                 System.out.println("Color updated successfully.");
                 break;
 
             case 6: // Update Price
-                double newPrice;
-                do {
+                double newPrice = -1;
+                while (newPrice < 0) {
                     System.out.print("Enter New Price: ");
-                    newPrice = sc.nextDouble();
-                    sc.nextLine(); // Consume newline character
-                } while (newPrice < 0); // Validate price
+                    if (sc.hasNextDouble()) {
+                        newPrice = sc.nextDouble();
+                        sc.nextLine(); // Consume newline character
+                    } else {
+                        System.out.println("Invalid price. Please enter a valid numeric value.");
+                        sc.next(); // Clear invalid input
+                    }
+                }
                 String formattedPrice = df.format(newPrice);
                 String query6 = "UPDATE ClothingItem SET c_price=? WHERE clothing_ID=?";
                 conf.updateRecord(query6, formattedPrice, id);
@@ -338,7 +345,7 @@ public class ClothingItem {
                 System.out.print("Enter New Availability (available/unavailable): ");
                 String newAvailability = sc.nextLine().trim().toLowerCase();
                 if (!newAvailability.equals("available") && !newAvailability.equals("unavailable")) {
-                    System.out.println("Invalid availability status.");
+                    System.out.println("Invalid availability status. Please try again.");
                     break;
                 }
                 String query8 = "UPDATE ClothingItem SET c_availability=? WHERE clothing_ID=?";
@@ -352,23 +359,64 @@ public class ClothingItem {
                 break;
 
             default:
-                System.out.println("Invalid choice. Please select a valid option.");
+                System.out.println("Invalid choice. Please select a valid option (1-9).");
+                break;
         }
     }
 }
 
 
     private void deleteClothingItem(Scanner sc) {
-        viewClothingItem();
+    // Display all clothing items for reference
+    viewClothingItem();
 
+    int id = -1;
+
+    // Validate input for Clothing Item ID
+    while (true) {
         System.out.print("Enter Clothing Item ID to delete: ");
-        int id = sc.nextInt();
-
-        String sqlDelete = "DELETE FROM ClothingItem WHERE clothing_ID=?";
-        CONFIG con = new CONFIG();
-        con.deleteRecord(sqlDelete, id);
-        System.out.println("Clothing item deleted successfully.");
+        if (sc.hasNextInt()) {
+            id = sc.nextInt();
+            sc.nextLine(); // Consume newline character
+            break;
+        } else {
+            System.out.println("Invalid input. Please enter a valid numeric Clothing Item ID.");
+            sc.next(); // Clear invalid input
+        }
     }
+
+    CONFIG con = new CONFIG();
+    String checkExistenceQuery = "SELECT COUNT(1) FROM ClothingItem WHERE clothing_ID=?";
+    int exists = con.checkExistence(checkExistenceQuery, id);
+
+    if (exists == 0) {
+        System.out.println("\tERROR: Clothing Item ID " + id + " doesn't exist.");
+        return;
+    }
+
+    // Confirm deletion
+    System.out.print("Are you sure you want to delete Clothing Item ID " + id + "? (Y/N): ");
+    String confirmation = sc.nextLine().trim();
+
+    // Validate confirmation input
+    while (!confirmation.equalsIgnoreCase("Y") && !confirmation.equalsIgnoreCase("N")) {
+        System.out.print("Invalid input. Please enter 'Y' to confirm or 'N' to cancel: ");
+        confirmation = sc.nextLine().trim();
+    }
+
+    if (confirmation.equalsIgnoreCase("Y")) {
+        String sqlDelete = "DELETE FROM ClothingItem WHERE clothing_ID=?";
+        try {
+            con.deleteRecord(sqlDelete, id);
+            System.out.println("Clothing item deleted successfully.");
+        } catch (Exception e) {
+            System.out.println("Error while deleting the record: " + e.getMessage());
+        }
+    } else {
+        System.out.println("Deletion process canceled.");
+    }
+}
+
 
     private boolean isValidSize(String size) {
         return size.equalsIgnoreCase("small") ||

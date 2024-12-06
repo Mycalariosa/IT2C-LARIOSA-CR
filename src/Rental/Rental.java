@@ -67,7 +67,7 @@ public class Rental {
                     deleteRental(sc);
                     break;
                 case 6:
-                    System.out.println("Thanks UWU -_-");
+                    System.out.println("Thankyou for using Rental Menu!");
                     return;
             }
 
@@ -298,10 +298,11 @@ public void ReturnRental(Scanner sc) {
         }
     } while (!validId);
 
-    // Continue with the return process (rest of your code for return logic)
-    String getEndDateQuery = "SELECT rental_end_date, r_price FROM Rental WHERE rental_id=?";
+    // Retrieve rental details
+    String getEndDateQuery = "SELECT rental_end_date, r_price, clothing_id FROM Rental WHERE rental_id=?";
     LocalDate rentalEndDate;
     double dailyRate;
+    int clothingId;
     double lateFee = 0.0;
 
     try (Connection con = conf.connectDB();
@@ -312,6 +313,7 @@ public void ReturnRental(Scanner sc) {
         if (rs.next()) {
             rentalEndDate = LocalDate.parse(rs.getString("rental_end_date"));
             dailyRate = rs.getDouble("r_price");
+            clothingId = rs.getInt("clothing_id"); // Retrieve associated clothing item ID
 
             System.out.println("\nRental End Date (must be returned by): " + rentalEndDate);
         } else {
@@ -319,10 +321,11 @@ public void ReturnRental(Scanner sc) {
             return;
         }
     } catch (SQLException e) {
-        System.out.println("Error retrieving rental end date: " + e.getMessage());
+        System.out.println("Error retrieving rental details: " + e.getMessage());
         return;
     }
 
+    // Process return date and calculate late fee
     System.out.print("Enter today's date (YYYY-MM-DD): ");
     String todayDateStr = sc.next();
     LocalDate todayDate = LocalDate.parse(todayDateStr);
@@ -335,6 +338,7 @@ public void ReturnRental(Scanner sc) {
         damageFee += lateFee;
     }
 
+    // Handle damage fees
     System.out.println("\n---------------------------------------");
     System.out.println("|       Damage Type       |   Charge   |");
     System.out.println("---------------------------------------");
@@ -376,27 +380,34 @@ public void ReturnRental(Scanner sc) {
     if (paymentResponse.equals("yes") || paymentResponse.equals("y")) {
         processPayment(damageFee);
 
-        // Update the r_status to "returned", set damage_charge, late_return_charge, and current_date
-        String updateStatusQuery = "UPDATE Rental SET r_status = 'returned', damage_charge = ?, late_return_charge = ?, current_date = ? WHERE rental_id = ?";
-        try (Connection con = conf.connectDB();
-             PreparedStatement pst = con.prepareStatement(updateStatusQuery)) {
-            pst.setDouble(1, damageFee - lateFee); // Only the damage fee
-            pst.setDouble(2, lateFee); // Late return charge
-            pst.setDate(3, java.sql.Date.valueOf(todayDate)); // Setting current date as return date
-            pst.setInt(4, rentalId);
-            int rowsUpdated = pst.executeUpdate();
-            if (rowsUpdated > 0) {
-                System.out.println("Rental status updated to 'returned'.");
-            }
-        } catch (SQLException e) {
-            System.out.println("Error updating rental status: " + e.getMessage());
-        }
+        // Update the rental and clothing item status
+        String updateRentalStatusQuery = "UPDATE Rental SET r_status = 'returned', damage_charge = ?, late_return_charge = ?, current_date = ? WHERE rental_id = ?";
+        String updateClothingAvailabilityQuery = "UPDATE ClothingItem SET c_availability = 'available' WHERE clothing_ID = ?";
 
-        System.out.println("Rental returned successfully. Payment processed.");
+        try (Connection con = conf.connectDB();
+             PreparedStatement rentalPst = con.prepareStatement(updateRentalStatusQuery);
+             PreparedStatement clothingPst = con.prepareStatement(updateClothingAvailabilityQuery)) {
+
+            // Update rental status
+            rentalPst.setDouble(1, damageFee - lateFee); // Only the damage fee
+            rentalPst.setDouble(2, lateFee); // Late return charge
+            rentalPst.setDate(3, java.sql.Date.valueOf(todayDate)); // Setting current date as return date
+            rentalPst.setInt(4, rentalId);
+            rentalPst.executeUpdate();
+
+            // Update clothing item availability
+            clothingPst.setInt(1, clothingId);
+            clothingPst.executeUpdate();
+
+            System.out.println("Rental returned successfully. Clothing item marked as 'available'.");
+        } catch (SQLException e) {
+            System.out.println("Error updating rental or clothing item status: " + e.getMessage());
+        }
     } else {
         System.out.println("Payment canceled. Rental return not completed.");
     }
 }
+
 
 // Method to display active rentals
 private void displayActiveRentals() {
